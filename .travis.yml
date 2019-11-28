@@ -1,0 +1,23 @@
+language: node_js
+node_js:
+  - "11"
+
+branches:
+  only:
+    - master
+    - staging # This is where pull requests from "bors r+" are built.
+    - trying # This is where pull requests from "bors try" are built.
+
+cache:
+  yarn: true
+  directories:
+    - node_modules
+
+notifications:
+  email: false
+
+jobs:
+  include:
+    - stage: Test
+      install: yarn install --frozen-lockfile
+      script: yarn test

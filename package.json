@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:mem": "jest --runInBand --logHeapUsage",
+    "test:debug": "node --expose-gc --inspect ./node_modules/.bin/jest --runInBand --logHeapUsage --watch"
+  }
+}
