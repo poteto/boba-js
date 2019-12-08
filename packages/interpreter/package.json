@@ -1,0 +1,13 @@
+{
+  "name": "interpreter",
+  "version": "0.0.1",
+  "description": "The boba-js interpreter",
+  "main": "index.ts",
+  "keywords": [
+    "bobajs",
+    "interpreter"
+  ],
+  "author": "Lauren Tan <arr@sugarpirate.com> (http://www.sugarpirate.com)",
+  "license": "MIT",
+  "devDependencies": {}
+}
