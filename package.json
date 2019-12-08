@@ -11,6 +11,7 @@
     "test:mem": "jest --runInBand --logHeapUsage",
     "test:debug": "node --expose-gc --inspect ./node_modules/.bin/jest --runInBand --logHeapUsage --watch"
   },
+  "author": "Lauren Tan <arr@sugarpirate.com> (http://www.sugarpirate.com)",
   "devDependencies": {
     "@types/jest": "^24.0.23",
     "@types/node": "^12.12.14",
