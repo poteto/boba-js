@@ -31,6 +31,11 @@ export const enum TokenType {
   // Keywords
   FUNCTION = 'FUNCTION',
   LET = 'LET',
+  TRUE = 'TRUE',
+  FALSE = 'FALSE',
+  IF = 'IF',
+  ELSE = 'ELSE',
+  RETURN = 'RETURN',
 }
 
 export type LiteralType = string | 0;
@@ -43,6 +48,11 @@ export type Token = {
 const KEYWORDS = {
   fn: TokenType.FUNCTION,
   let: TokenType.LET,
+  true: TokenType.TRUE,
+  false: TokenType.FALSE,
+  if: TokenType.IF,
+  else: TokenType.ELSE,
+  return: TokenType.RETURN,
 };
 
 export default function createToken(
