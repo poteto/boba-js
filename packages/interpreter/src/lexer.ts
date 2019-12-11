@@ -27,7 +27,7 @@ function isDigit<T extends ToStringable>(ch: T) {
 export default function lex(input: string) {
   let lexer: Lexer = { input, position: 0, readPosition: 0, ch: 0 };
   function peekChar() {
-    if (lexer.readPosition >= input.length) {
+    if (lexer.readPosition >= lexer.input.length) {
       return 0;
     }
     return lexer.input[lexer.readPosition];
