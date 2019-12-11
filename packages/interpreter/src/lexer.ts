@@ -26,6 +26,12 @@ function isDigit<T extends ToStringable>(ch: T) {
 
 export default function lex(input: string) {
   let lexer: Lexer = { input, position: 0, readPosition: 0, ch: 0 };
+  function peekChar() {
+    if (lexer.readPosition >= input.length) {
+      return 0;
+    }
+    return lexer.input[lexer.readPosition];
+  }
   function readChar() {
     if (lexer.readPosition >= lexer.input.length) {
       lexer.ch = 0;
@@ -59,6 +65,13 @@ export default function lex(input: string) {
     skipWhitespace();
     switch (lexer.ch) {
       case '=':
+        if (peekChar() === '=') {
+          const ch = lexer.ch;
+          readChar();
+          const literal = ch + lexer.ch;
+          token = createToken(TokenType.EQ, literal);
+          break;
+        }
         token = createToken(TokenType.ASSIGN, lexer.ch);
         break;
       case '+':
@@ -68,6 +81,13 @@ export default function lex(input: string) {
         token = createToken(TokenType.MINUS, lexer.ch);
         break;
       case '!':
+        if (peekChar() === '=') {
+          const ch = lexer.ch;
+          readChar();
+          const literal = ch + lexer.ch;
+          token = createToken(TokenType.NOT_EQ, literal);
+          break;
+        }
         token = createToken(TokenType.BANG, lexer.ch);
         break;
       case '/':

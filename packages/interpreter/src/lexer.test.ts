@@ -37,6 +37,9 @@ describe('Lexer', () => {
       } else {
         return false;
       }
+
+      10 == 10;
+      10 != 9;
     `;
     const expected = [
       { type: TokenType.LET, literal: 'let' },
@@ -104,6 +107,14 @@ describe('Lexer', () => {
       { type: TokenType.FALSE, literal: 'false' },
       { type: TokenType.SEMICOLON, literal: ';' },
       { type: TokenType.RBRACE, literal: '}' },
+      { type: TokenType.INT, literal: '10' },
+      { type: TokenType.EQ, literal: '==' },
+      { type: TokenType.INT, literal: '10' },
+      { type: TokenType.SEMICOLON, literal: ';' },
+      { type: TokenType.INT, literal: '10' },
+      { type: TokenType.NOT_EQ, literal: '!=' },
+      { type: TokenType.INT, literal: '9' },
+      { type: TokenType.SEMICOLON, literal: ';' },
       { type: TokenType.EOF, literal: '' },
     ];
     const nextToken = lex(input);
