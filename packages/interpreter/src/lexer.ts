@@ -61,6 +61,30 @@ export default function lex(input: string) {
       case '=':
         token = createToken(TokenType.ASSIGN, lexer.ch);
         break;
+      case '+':
+        token = createToken(TokenType.PLUS, lexer.ch);
+        break;
+      case '-':
+        token = createToken(TokenType.MINUS, lexer.ch);
+        break;
+      case '!':
+        token = createToken(TokenType.BANG, lexer.ch);
+        break;
+      case '/':
+        token = createToken(TokenType.SLASH, lexer.ch);
+        break;
+      case '*':
+        token = createToken(TokenType.ASTERISK, lexer.ch);
+        break;
+      case '<':
+        token = createToken(TokenType.LT, lexer.ch);
+        break;
+      case '>':
+        token = createToken(TokenType.GT, lexer.ch);
+        break;
+      case ',':
+        token = createToken(TokenType.COMMA, lexer.ch);
+        break;
       case ';':
         token = createToken(TokenType.SEMICOLON, lexer.ch);
         break;
@@ -70,17 +94,8 @@ export default function lex(input: string) {
       case ')':
         token = createToken(TokenType.RPAREN, lexer.ch);
         break;
-      case ',':
-        token = createToken(TokenType.COMMA, lexer.ch);
-        break;
-      case '+':
-        token = createToken(TokenType.PLUS, lexer.ch);
-        break;
       case '{':
         token = createToken(TokenType.LBRACE, lexer.ch);
-        break;
-      case '}':
-        token = createToken(TokenType.RBRACE, lexer.ch);
         break;
       case '}':
         token = createToken(TokenType.RBRACE, lexer.ch);
