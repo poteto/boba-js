@@ -205,9 +205,9 @@ describe('Parser', () => {
         expect(statement.expression).toBeInstanceOf(InfixExpression);
       });
 
-      expected.forEach((test, idx) => {
-        expect(program.statements[idx].toString()).toBe(test);
-      });
+      expected.forEach((test, idx) =>
+        expect(program.statements[idx].toString()).toBe(test)
+      );
     });
 
     it('handles operator precedence parsing', () => {
@@ -228,6 +228,11 @@ describe('Parser', () => {
         false;
         3 > 5 == false;
         3 < 5 == false;
+        1 + (2 + 3) + 4;
+        (5 + 5) * 2;
+        2 / (5 + 5);
+        -(5 + 5);
+        !(true == true);
       `.trim();
       const expected = [
         '((-a) * b)',
@@ -247,6 +252,11 @@ describe('Parser', () => {
         'false',
         '((3 > 5) == false)',
         '((3 < 5) == false)',
+        '((1 + (2 + 3)) + 4)',
+        '((5 + 5) * 2)',
+        '(2 / (5 + 5))',
+        '(-(5 + 5))',
+        '(!(true == true))',
       ];
 
       const lexer = new Lexer(input);
@@ -254,16 +264,16 @@ describe('Parser', () => {
       const program = parser.parseProgram();
 
       expect(program).not.toBeNull();
-      expect(program?.statements.length).toBe(17);
+      expect(program?.statements.length).toBe(22);
       expect(parser.errors.length).toBe(0);
 
       (program.statements as ExpressionStatement[]).forEach(statement =>
         expect(statement).toBeInstanceOf(ExpressionStatement)
       );
 
-      expected.forEach((test, idx) => {
-        expect(program.statements[idx].toString()).toBe(test);
-      });
+      expected.forEach((test, idx) =>
+        expect(program.statements[idx].toString()).toBe(test)
+      );
     });
 
     it('parses boolean literal expressions', () => {
@@ -286,9 +296,9 @@ describe('Parser', () => {
         expect(statement.expression).toBeInstanceOf(BooleanLiteral);
       });
 
-      expected.forEach((test, idx) => {
-        expect(program.statements[idx].toString()).toBe(test);
-      });
+      expected.forEach((test, idx) =>
+        expect(program.statements[idx].toString()).toBe(test)
+      );
     });
   });
 
