@@ -20,9 +20,10 @@ import parseIntegerLiteral from './prefix/parse-integer-literal';
 import parseIdentifier from './prefix/parse-identifier';
 import parseInfixExpression from './infix/parse-infix-expression';
 import parsePrefixExpression from './prefix/parse-prefix-expression';
+import parseGroupedExpression from './prefix/parse-grouped-expression';
 
-type PrefixParseFunction = () => Expression;
-type InfixParseFunction = (expr: Expression) => Expression;
+type PrefixParseFunction = () => Expression | null;
+type InfixParseFunction = (expr: Expression) => Expression | null;
 
 type PrefixParseFunctionMap = {
   [key in TokenType]: PrefixParseFunction;
@@ -77,6 +78,7 @@ export default class Parser {
     this.registerPrefix(TokenType.MINUS, parsePrefixExpression.bind(this));
     this.registerPrefix(TokenType.TRUE, parseBoolean.bind(this));
     this.registerPrefix(TokenType.FALSE, parseBoolean.bind(this));
+    this.registerPrefix(TokenType.LPAREN, parseGroupedExpression.bind(this));
 
     this.registerInfix(TokenType.PLUS, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.MINUS, parseInfixExpression.bind(this));
@@ -135,7 +137,10 @@ export default class Parser {
       }
 
       this.nextToken();
-      leftExpr = infixFn(leftExpr);
+
+      if (leftExpr) {
+        leftExpr = infixFn(leftExpr);
+      }
     }
 
     return leftExpr;
@@ -154,6 +159,15 @@ export default class Parser {
 
   public currTokenIs(tokenType: TokenType): boolean {
     return this.currToken?.type === tokenType;
+  }
+
+  public expectPeek(tokenType: TokenType): boolean {
+    if (this.peekTokenIs(tokenType)) {
+      this.nextToken();
+      return true;
+    }
+    this.pushTokenTypeError(tokenType);
+    return false;
   }
 
   private parseStatement(): Statement | null {
@@ -249,15 +263,6 @@ export default class Parser {
 
   private peekTokenIs(tokenType: TokenType): boolean {
     return this.peekToken?.type === tokenType;
-  }
-
-  private expectPeek(tokenType: TokenType): boolean {
-    if (this.peekTokenIs(tokenType)) {
-      this.nextToken();
-      return true;
-    }
-    this.pushTokenTypeError(tokenType);
-    return false;
   }
 
   private peekPrecedence(): PrecedenceOrder {
