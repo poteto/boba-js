@@ -1,4 +1,4 @@
-import hasOwnProperty from './utils/has-own-property';
+import hasOwnProperty from '../utils/has-own-property';
 
 export const enum TokenType {
   ILLEGAL = 'ILLEGAL',
@@ -41,10 +41,21 @@ export const enum TokenType {
   RETURN = 'RETURN',
 }
 
-export type LiteralType = string | 0;
-
+export type LiteralType = string;
 export type Token = {
   type: TokenType;
+  literal: LiteralType;
+};
+
+export type BooleanLiteralToken = {
+  type: TokenType.TRUE | TokenType.FALSE;
+  literal: LiteralType;
+};
+export type IdentToken = { type: TokenType.IDENT; literal: LiteralType };
+export type IntegerLiteralToken = { type: TokenType.INT; literal: LiteralType };
+export type LetStatementToken = { type: TokenType.LET; literal: LiteralType };
+export type ReturnStatementToken = {
+  type: TokenType.RETURN;
   literal: LiteralType;
 };
 
@@ -56,7 +67,7 @@ const KEYWORDS = {
   if: TokenType.IF,
   else: TokenType.ELSE,
   return: TokenType.RETURN,
-};
+} as const;
 
 export default function createToken(
   type: TokenType,

@@ -1,9 +1,9 @@
-import { TokenType } from '../src/token';
-import lex from './lexer';
+import { TokenType } from '../token/';
+import Lexer from '.';
 
 describe('Lexer', () => {
   it('lexes operators and delimiters into tokens', () => {
-    const input = '=+(){},;';
+    const input = '=+(){},;'.trim();
     const expected = [
       { type: TokenType.ASSIGN, literal: '=' },
       { type: TokenType.PLUS, literal: '+' },
@@ -15,8 +15,8 @@ describe('Lexer', () => {
       { type: TokenType.SEMICOLON, literal: ';' },
       { type: TokenType.EOF, literal: '' },
     ];
-    const nextToken = lex(input);
-    expected.forEach(test => expect(test).toEqual(nextToken()));
+    const lexer = new Lexer(input);
+    expected.forEach(test => expect(lexer.nextToken()).toEqual(test));
   });
 
   it('lexes additional operators and keywords', () => {
@@ -40,7 +40,7 @@ describe('Lexer', () => {
 
       10 == 10;
       10 != 9;
-    `;
+    `.trim();
     const expected = [
       { type: TokenType.LET, literal: 'let' },
       { type: TokenType.IDENT, literal: 'five' },
@@ -117,7 +117,7 @@ describe('Lexer', () => {
       { type: TokenType.SEMICOLON, literal: ';' },
       { type: TokenType.EOF, literal: '' },
     ];
-    const nextToken = lex(input);
-    expected.forEach(test => expect(test).toEqual(nextToken()));
+    const lexer = new Lexer(input);
+    expected.forEach(test => expect(lexer.nextToken()).toEqual(test));
   });
 });
