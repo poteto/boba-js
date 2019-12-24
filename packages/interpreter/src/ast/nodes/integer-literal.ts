@@ -1,11 +1,8 @@
-import { Token, IntegerLiteralToken } from '../../token/';
+import { IntegerLiteralToken } from '../../token/';
 import { Expression } from '../../ast/';
 
 export default class IntegerLiteral implements Expression {
-  public token: Token;
-  constructor(token: IntegerLiteralToken, public value: number) {
-    this.token = token;
-  }
+  constructor(public token: IntegerLiteralToken, public value: number) {}
 
   expressionNode() {}
   tokenLiteral() {

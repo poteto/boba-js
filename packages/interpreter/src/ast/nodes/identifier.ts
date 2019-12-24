@@ -1,11 +1,8 @@
-import { Token, IdentToken } from '../../token/';
+import { IdentToken } from '../../token/';
 import { Expression } from '../../ast/';
 
 export default class Identifier implements Expression {
-  public token: Token;
-  constructor(token: IdentToken, public value: string) {
-    this.token = token;
-  }
+  constructor(public token: IdentToken, public value: string) {}
 
   expressionNode() {}
   tokenLiteral() {

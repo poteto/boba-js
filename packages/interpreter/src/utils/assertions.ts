@@ -6,6 +6,8 @@ import {
   ReturnStatementToken,
   IdentToken,
   BooleanLiteralToken,
+  IfExpressionToken,
+  LeftBraceToken,
 } from '../token';
 import { AssertionError } from 'assert';
 
@@ -53,6 +55,26 @@ export function assertIsBooleanLiteralToken(
   if (!(token.type === TokenType.TRUE || token.type === TokenType.FALSE)) {
     throw new AssertionError({
       message: `Token is not of type ${TokenType.TRUE} or ${TokenType.FALSE}`,
+    });
+  }
+}
+
+export function assertIsIfExpressionToken(
+  token: Token
+): asserts token is IfExpressionToken {
+  if (token.type !== TokenType.IF) {
+    throw new AssertionError({
+      message: `Token is not of type ${TokenType.IF}`,
+    });
+  }
+}
+
+export function assertIsLeftBraceToken(
+  token: Token
+): asserts token is LeftBraceToken {
+  if (token.type !== TokenType.LBRACE) {
+    throw new AssertionError({
+      message: `Token is not of type ${TokenType.LBRACE}`,
     });
   }
 }
