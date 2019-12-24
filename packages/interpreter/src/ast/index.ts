@@ -1,6 +1,7 @@
 export { default as BooleanLiteral } from './nodes/boolean-literal';
 export { default as ExpressionStatement } from './nodes/expression';
 export { default as Identifier } from './nodes/identifier';
+export { default as IfExpression } from './nodes/if-expression';
 export { default as InfixExpression } from './nodes/infix-expression';
 export { default as IntegerLiteral } from './nodes/integer-literal';
 export { default as LetStatement } from './nodes/let';

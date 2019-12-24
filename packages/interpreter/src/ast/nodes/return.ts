@@ -1,12 +1,9 @@
-import { Token, ReturnStatementToken } from '../../token/';
+import { ReturnStatementToken } from '../../token/';
 import { Expression, Statement } from '../../ast/';
 
 export default class ReturnStatement implements Statement {
-  public token: Token;
   public returnValue?: Expression;
-  constructor(token: ReturnStatementToken) {
-    this.token = token;
-  }
+  constructor(public token: ReturnStatementToken) {}
 
   statementNode() {}
   tokenLiteral() {

@@ -6,8 +6,8 @@ import {
   assertIsIdentToken,
   assertIsLetToken,
   assertIsReturnToken,
+  assertIsLeftBraceToken,
 } from '../utils/assertions';
-
 import {
   Program,
   Identifier,
@@ -18,9 +18,11 @@ import {
 import parseBoolean from './prefix/parse-boolean';
 import parseIntegerLiteral from './prefix/parse-integer-literal';
 import parseIdentifier from './prefix/parse-identifier';
+import parseIfExpression from './prefix/parse-if-expression';
 import parseInfixExpression from './infix/parse-infix-expression';
 import parsePrefixExpression from './prefix/parse-prefix-expression';
 import parseGroupedExpression from './prefix/parse-grouped-expression';
+import BlockStatement from '../ast/nodes/block-statement';
 
 type PrefixParseFunction = () => Expression | null;
 type InfixParseFunction = (expr: Expression) => Expression | null;
@@ -79,6 +81,7 @@ export default class Parser {
     this.registerPrefix(TokenType.TRUE, parseBoolean.bind(this));
     this.registerPrefix(TokenType.FALSE, parseBoolean.bind(this));
     this.registerPrefix(TokenType.LPAREN, parseGroupedExpression.bind(this));
+    this.registerPrefix(TokenType.IF, parseIfExpression.bind(this));
 
     this.registerInfix(TokenType.PLUS, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.MINUS, parseInfixExpression.bind(this));
@@ -161,6 +164,10 @@ export default class Parser {
     return this.currToken?.type === tokenType;
   }
 
+  public peekTokenIs(tokenType: TokenType): boolean {
+    return this.peekToken?.type === tokenType;
+  }
+
   public expectPeek(tokenType: TokenType): boolean {
     if (this.peekTokenIs(tokenType)) {
       this.nextToken();
@@ -168,6 +175,28 @@ export default class Parser {
     }
     this.pushTokenTypeError(tokenType);
     return false;
+  }
+
+  public parseBlockStatement(): BlockStatement | null {
+    if (this.currToken === undefined) {
+      return null;
+    }
+    assertIsLeftBraceToken(this.currToken);
+    const block = new BlockStatement(this.currToken);
+    this.nextToken();
+
+    while (
+      !this.currTokenIs(TokenType.RBRACE) &&
+      !this.currTokenIs(TokenType.EOF)
+    ) {
+      const statement = this.parseStatement();
+      if (statement !== null) {
+        block.statements.push(statement);
+      }
+      this.nextToken();
+    }
+
+    return block;
   }
 
   private parseStatement(): Statement | null {
@@ -259,10 +288,6 @@ export default class Parser {
 
   private registerInfix(tokenType: TokenType, fn: InfixParseFunction): void {
     this.infixParseFns[tokenType] = fn;
-  }
-
-  private peekTokenIs(tokenType: TokenType): boolean {
-    return this.peekToken?.type === tokenType;
   }
 
   private peekPrecedence(): PrecedenceOrder {

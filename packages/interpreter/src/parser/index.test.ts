@@ -12,6 +12,7 @@ import {
   Identifier,
   BooleanLiteral,
 } from '../ast/';
+import IfExpression from '../ast/nodes/if-expression';
 
 function testIntegerLiteral(expr: Expression | undefined, value: number): void {
   expect(expr).toBeInstanceOf(IntegerLiteral);
@@ -294,6 +295,34 @@ describe('Parser', () => {
       (program.statements as ExpressionStatement[]).forEach(statement => {
         expect(statement).toBeInstanceOf(ExpressionStatement);
         expect(statement.expression).toBeInstanceOf(BooleanLiteral);
+      });
+
+      expected.forEach((test, idx) =>
+        expect(program.statements[idx].toString()).toBe(test)
+      );
+    });
+
+    it('parses if expressions', () => {
+      const input = `
+        if (x < y) { x };
+        if (x < y) { x } else { y };
+      `.trim();
+      const expected = [
+        'if (x < y) then x',
+        'if (x < y) then x else y',
+      ];
+
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer);
+      const program = parser.parseProgram();
+
+      expect(program).not.toBeNull();
+      expect(program?.statements.length).toBe(2);
+      expect(parser.errors.length).toBe(0);
+
+      (program.statements as ExpressionStatement[]).forEach(statement => {
+        expect(statement).toBeInstanceOf(ExpressionStatement);
+        expect(statement.expression).toBeInstanceOf(IfExpression);
       });
 
       expected.forEach((test, idx) =>
