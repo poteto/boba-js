@@ -10,7 +10,6 @@ export default class ExpressionStatement implements Statement {
     return this.token.literal;
   }
   toString() {
-    // TODO fixme
     if (this.expression === undefined) {
       return '';
     }

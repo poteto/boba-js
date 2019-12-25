@@ -13,6 +13,8 @@ import {
   BooleanLiteral,
 } from '../ast/';
 import IfExpression from '../ast/nodes/if-expression';
+import FunctionLiteral from '../ast/nodes/function-literal';
+import { TokenType } from '../token';
 
 function testIntegerLiteral(expr: Expression | undefined, value: number): void {
   expect(expr).toBeInstanceOf(IntegerLiteral);
@@ -307,10 +309,7 @@ describe('Parser', () => {
         if (x < y) { x };
         if (x < y) { x } else { y };
       `.trim();
-      const expected = [
-        'if (x < y) then x',
-        'if (x < y) then x else y',
-      ];
+      const expected = ['if (x < y) then x', 'if (x < y) then x else y'];
 
       const lexer = new Lexer(input);
       const parser = new Parser(lexer);
@@ -323,6 +322,38 @@ describe('Parser', () => {
       (program.statements as ExpressionStatement[]).forEach(statement => {
         expect(statement).toBeInstanceOf(ExpressionStatement);
         expect(statement.expression).toBeInstanceOf(IfExpression);
+      });
+
+      expected.forEach((test, idx) =>
+        expect(program.statements[idx].toString()).toBe(test)
+      );
+    });
+
+    it('parses function literals', () => {
+      const input = `
+        fn(x, y) { return x + y; };
+        fn() {};
+        fn(x) {};
+        fn(x, y, z) {};
+      `.trim();
+      const expected = [
+        'fn(x, y) { return (x + y); }',
+        'fn() {}',
+        'fn(x) {}',
+        'fn(x, y, z) {}',
+      ];
+
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer);
+      const program = parser.parseProgram();
+
+      expect(program).not.toBeNull();
+      expect(program?.statements.length).toBe(4);
+      expect(parser.errors.length).toBe(0);
+
+      (program.statements as ExpressionStatement[]).forEach(statement => {
+        expect(statement).toBeInstanceOf(ExpressionStatement);
+        expect(statement.expression).toBeInstanceOf(FunctionLiteral);
       });
 
       expected.forEach((test, idx) =>

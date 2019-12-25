@@ -59,7 +59,11 @@ export type ReturnStatementToken = {
   literal: LiteralType;
 };
 export type IfExpressionToken = { type: TokenType.IF; literal: LiteralType };
-export type LeftBraceToken = { type: TokenType.LBRACE, literal: LiteralType };
+export type LeftBraceToken = { type: TokenType.LBRACE; literal: LiteralType };
+export type FunctionLiteralToken = {
+  type: TokenType.FUNCTION;
+  literal: LiteralType;
+};
 
 const KEYWORDS = {
   fn: TokenType.FUNCTION,

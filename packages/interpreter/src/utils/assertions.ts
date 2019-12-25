@@ -8,6 +8,7 @@ import {
   BooleanLiteralToken,
   IfExpressionToken,
   LeftBraceToken,
+  LiteralType,
 } from '../token';
 import { AssertionError } from 'assert';
 
@@ -75,6 +76,17 @@ export function assertIsLeftBraceToken(
   if (token.type !== TokenType.LBRACE) {
     throw new AssertionError({
       message: `Token is not of type ${TokenType.LBRACE}`,
+    });
+  }
+}
+
+export function assertTokenType<T extends TokenType>(
+  token: Token,
+  assertedTokenType: T
+): asserts token is { type: T; literal: LiteralType } {
+  if (token.type !== assertedTokenType) {
+    throw new AssertionError({
+      message: `Token is not of type ${assertedTokenType}`,
     });
   }
 }
