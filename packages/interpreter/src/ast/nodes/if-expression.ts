@@ -1,11 +1,10 @@
 import { IfExpressionToken } from '../../token/';
-import { Expression } from '../../ast/';
-import BlockStatement from './block-statement';
+import { Expression, BlockStatement } from '../../ast/';
 
 export default class IfExpression implements Expression {
-  public condition?: Expression;
-  public consequence?: BlockStatement;
-  public alternative?: BlockStatement;
+  public condition: Expression | null = null;
+  public consequence: BlockStatement | null = null;
+  public alternative: BlockStatement | null = null;
   constructor(public token: IfExpressionToken) {}
 
   expressionNode() {}

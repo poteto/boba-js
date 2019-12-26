@@ -2,8 +2,8 @@ import { LetStatementToken } from '../../token/';
 import { Identifier, Expression, Statement } from '../../ast/';
 
 export default class LetStatement implements Statement {
-  public name?: Identifier;
-  public value?: Expression;
+  public name: Identifier | null = null;
+  public value: Expression | null = null;
   constructor(public token: LetStatementToken) {}
 
   statementNode() {}

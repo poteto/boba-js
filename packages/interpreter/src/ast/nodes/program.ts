@@ -1,6 +1,6 @@
-import { Statement, Node } from '../../ast/';
+import { Statement, ASTNode } from '../../ast/';
 
-export default class Program implements Node {
+export default class Program implements ASTNode {
   public statements: Statement[] = [];
 
   tokenLiteral(): string {

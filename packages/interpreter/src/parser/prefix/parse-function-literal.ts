@@ -1,13 +1,9 @@
 import Parser from '..';
-import { Expression } from '../../ast';
+import { Expression, FunctionLiteral } from '../../ast';
 import { TokenType } from '../../token';
-import FunctionLiteral from '../../ast/nodes/function-literal';
-import { assertTokenType } from '../../utils/assertions';
+import assertTokenType from '../../utils/assert-token-type';
 
 export default function parseFunctionLiteral(this: Parser): Expression | null {
-  if (this.currToken === undefined) {
-    throw new TypeError(`Was expecting ${this.currToken} to be defined`);
-  }
   assertTokenType(this.currToken, TokenType.FUNCTION);
   const expr = new FunctionLiteral(this.currToken);
 
@@ -15,19 +11,12 @@ export default function parseFunctionLiteral(this: Parser): Expression | null {
     return null;
   }
 
-  const parameters = this.parseFunctionParameters();
-  if (parameters) {
-    expr.parameters = parameters;
-  }
+  expr.parameters = this.parseFunctionParameters();
 
   if (!this.expectPeek(TokenType.LBRACE)) {
     return null;
   }
 
-  const body = this.parseBlockStatement();
-  if (body) {
-    expr.body = body;
-  }
-
+  expr.body = this.parseBlockStatement();
   return expr;
 }

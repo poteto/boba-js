@@ -1,15 +1,16 @@
 import Lexer from '../lexer';
 import { Token, TokenType } from '../token';
-import { Statement, Expression } from '../ast';
-
-import { assertTokenType } from '../utils/assertions';
 import {
   Program,
+  Statement,
+  Expression,
   Identifier,
   LetStatement,
   ReturnStatement,
   ExpressionStatement,
+  BlockStatement,
 } from '../ast';
+
 import parseBoolean from './prefix/parse-boolean';
 import parseIntegerLiteral from './prefix/parse-integer-literal';
 import parseIdentifier from './prefix/parse-identifier';
@@ -17,8 +18,10 @@ import parseIfExpression from './prefix/parse-if-expression';
 import parseInfixExpression from './infix/parse-infix-expression';
 import parsePrefixExpression from './prefix/parse-prefix-expression';
 import parseGroupedExpression from './prefix/parse-grouped-expression';
-import BlockStatement from '../ast/nodes/block-statement';
 import parseFunctionLiteral from './prefix/parse-function-literal';
+import parseCallExpression from './infix/parse-call-expression';
+
+import assertTokenType from '../utils/assert-token-type';
 
 type PrefixParseFunction = () => Expression | null;
 type InfixParseFunction = (expr: Expression) => Expression | null;
@@ -29,17 +32,20 @@ type PrefixParseFunctionMap = {
 type InfixParseFunctionMap = {
   [key in TokenType]: InfixParseFunction;
 };
+
+type SupportedPrecedenceTokens =
+  | TokenType.EQ
+  | TokenType.NOT_EQ
+  | TokenType.LT
+  | TokenType.GT
+  | TokenType.PLUS
+  | TokenType.MINUS
+  | TokenType.SLASH
+  | TokenType.ASTERISK
+  | TokenType.LPAREN;
 type PrecedenceMap = {
-  [TokenType.EQ]: PrecedenceOrder.EQUALS;
-  [TokenType.NOT_EQ]: PrecedenceOrder.EQUALS;
-  [TokenType.LT]: PrecedenceOrder.LESSGREATER;
-  [TokenType.GT]: PrecedenceOrder.LESSGREATER;
-  [TokenType.PLUS]: PrecedenceOrder.SUM;
-  [TokenType.MINUS]: PrecedenceOrder.SUM;
-  [TokenType.SLASH]: PrecedenceOrder.PRODUCT;
-  [TokenType.ASTERISK]: PrecedenceOrder.PRODUCT;
+  [key in SupportedPrecedenceTokens]: PrecedenceOrder;
 };
-type SupportedPrecedenceTokens = keyof PrecedenceMap;
 
 export const enum PrecedenceOrder {
   LOWEST,
@@ -52,12 +58,12 @@ export const enum PrecedenceOrder {
 }
 
 export default class Parser {
-  public currToken?: Token;
-  public peekToken?: Token;
+  public currToken!: Token;
+  public peekToken!: Token;
   public errors: string[] = [];
 
-  private prefixParseFns: Partial<PrefixParseFunctionMap> = {};
-  private infixParseFns: Partial<InfixParseFunctionMap> = {};
+  private prefixParseFns: Partial<PrefixParseFunctionMap> = Object.create(null);
+  private infixParseFns: Partial<InfixParseFunctionMap> = Object.create(null);
   private precedences: PrecedenceMap = {
     [TokenType.EQ]: PrecedenceOrder.EQUALS,
     [TokenType.NOT_EQ]: PrecedenceOrder.EQUALS,
@@ -67,7 +73,8 @@ export default class Parser {
     [TokenType.MINUS]: PrecedenceOrder.SUM,
     [TokenType.SLASH]: PrecedenceOrder.PRODUCT,
     [TokenType.ASTERISK]: PrecedenceOrder.PRODUCT,
-  };
+    [TokenType.LPAREN]: PrecedenceOrder.CALL,
+  } as const;
 
   constructor(private lexer: Lexer) {
     this.registerPrefix(TokenType.IDENT, parseIdentifier.bind(this));
@@ -88,9 +95,15 @@ export default class Parser {
     this.registerInfix(TokenType.NOT_EQ, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.LT, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.GT, parseInfixExpression.bind(this));
+    this.registerInfix(TokenType.LPAREN, parseCallExpression.bind(this));
 
     this.nextToken();
     this.nextToken();
+    if (this.currToken === null || this.peekToken === null) {
+      throw new Error(
+        `Parser's \`currToken\` and/or \`peekToken\` properties are null. This should never happen`
+      );
+    }
   }
 
   public nextToken(): void {
@@ -112,20 +125,82 @@ export default class Parser {
     return program;
   }
 
-  public parseExpression(precedence: PrecedenceOrder): Expression | null {
-    if (this.currToken === undefined) {
+  public parseStatement(): Statement | null {
+    switch (this.currToken.type) {
+      case TokenType.LET:
+        return this.parseLetStatement();
+      case TokenType.RETURN:
+        return this.parseReturnStatement();
+      default:
+        return this.parseExpressionStatement();
+    }
+  }
+
+  public parseLetStatement(): LetStatement | null {
+    assertTokenType(this.currToken, TokenType.LET);
+    const statement = new LetStatement(this.currToken);
+
+    if (!this.expectPeek(TokenType.IDENT)) {
       return null;
     }
+    assertTokenType(this.currToken, TokenType.IDENT);
+
+    statement.name = new Identifier(this.currToken, this.currToken.literal);
+
+    if (!this.expectPeek(TokenType.ASSIGN)) {
+      return null;
+    }
+
+    this.nextToken();
+    statement.value = this.parseExpression(PrecedenceOrder.LOWEST);
+
+    if (this.peekTokenIs(TokenType.SEMICOLON)) {
+      this.nextToken();
+    }
+
+    return statement;
+  }
+
+  public parseReturnStatement(): ReturnStatement | null {
+    assertTokenType(this.currToken, TokenType.RETURN);
+    const statement = new ReturnStatement(this.currToken);
+    this.nextToken();
+
+    statement.returnValue = this.parseExpression(PrecedenceOrder.LOWEST);
+
+    if (this.peekTokenIs(TokenType.SEMICOLON)) {
+      this.nextToken();
+    }
+
+    return statement;
+  }
+
+  public parseBlockStatement(): BlockStatement | null {
+    assertTokenType(this.currToken, TokenType.LBRACE);
+    const block = new BlockStatement(this.currToken);
+    this.nextToken();
+
+    while (
+      !this.currTokenIs(TokenType.RBRACE) &&
+      !this.currTokenIs(TokenType.EOF)
+    ) {
+      const statement = this.parseStatement();
+      if (statement !== null) {
+        block.statements.push(statement);
+      }
+      this.nextToken();
+    }
+
+    return block;
+  }
+
+  public parseExpression(precedence: PrecedenceOrder): Expression | null {
     const prefixFn = this.prefixParseFns[this.currToken.type];
     if (!prefixFn) {
       this.pushNoPrefixParseFnError(this.currToken.type);
       return null;
     }
     let leftExpr = prefixFn();
-
-    if (this.peekToken === undefined) {
-      return null;
-    }
 
     while (
       !this.peekTokenIs(TokenType.SEMICOLON) &&
@@ -146,54 +221,17 @@ export default class Parser {
     return leftExpr;
   }
 
-  public currPrecedence(): PrecedenceOrder {
-    let defaultPrecedence = PrecedenceOrder.LOWEST;
-    if (this.currToken === undefined) {
-      return defaultPrecedence;
-    }
-    if (this.hasPrecedence(this.currToken.type)) {
-      return this.precedences[this.currToken.type] as PrecedenceOrder;
-    }
-    return defaultPrecedence;
-  }
+  public parseExpressionStatement(): ExpressionStatement | null {
+    const statement = new ExpressionStatement(
+      this.currToken,
+      this.parseExpression(PrecedenceOrder.LOWEST)
+    );
 
-  public currTokenIs(tokenType: TokenType): boolean {
-    return this.currToken?.type === tokenType;
-  }
-
-  public peekTokenIs(tokenType: TokenType): boolean {
-    return this.peekToken?.type === tokenType;
-  }
-
-  public expectPeek(tokenType: TokenType): boolean {
-    if (this.peekTokenIs(tokenType)) {
-      this.nextToken();
-      return true;
-    }
-    this.pushTokenTypeError(tokenType);
-    return false;
-  }
-
-  public parseBlockStatement(): BlockStatement | null {
-    if (this.currToken === undefined) {
-      return null;
-    }
-    assertTokenType(this.currToken, TokenType.LBRACE);
-    const block = new BlockStatement(this.currToken);
-    this.nextToken();
-
-    while (
-      !this.currTokenIs(TokenType.RBRACE) &&
-      !this.currTokenIs(TokenType.EOF)
-    ) {
-      const statement = this.parseStatement();
-      if (statement !== null) {
-        block.statements.push(statement);
-      }
+    if (this.peekTokenIs(TokenType.SEMICOLON)) {
       this.nextToken();
     }
 
-    return block;
+    return statement;
   }
 
   public parseFunctionParameters(): Identifier[] | null {
@@ -206,9 +244,6 @@ export default class Parser {
     }
 
     this.nextToken();
-    if (this.currToken === undefined) {
-      return null;
-    }
     assertTokenType(this.currToken, TokenType.IDENT);
     // first parameter
     identifiers.push(new Identifier(this.currToken, this.currToken.literal));
@@ -227,87 +262,74 @@ export default class Parser {
     return identifiers;
   }
 
-  private parseStatement(): Statement | null {
-    if (this.currToken === undefined) {
-      return null;
-    }
-    switch (this.currToken.type) {
-      case TokenType.LET:
-        return this.parseLetStatement();
-      case TokenType.RETURN:
-        return this.parseReturnStatement();
-      default:
-        return this.parseExpressionStatement();
-    }
-  }
+  public parseCallArguments(): Expression[] | null {
+    const args: Expression[] = [];
 
-  private parseLetStatement(): LetStatement | null {
-    if (this.currToken === undefined) {
-      return null;
-    }
-    assertTokenType(this.currToken, TokenType.LET);
-    const statement = new LetStatement(this.currToken);
-
-    if (!this.expectPeek(TokenType.IDENT)) {
-      return null;
-    }
-    assertTokenType(this.currToken, TokenType.IDENT);
-
-    statement.name = new Identifier(this.currToken, this.currToken.literal);
-
-    if (!this.expectPeek(TokenType.ASSIGN)) {
-      return null;
+    // no args
+    if (this.peekTokenIs(TokenType.RPAREN)) {
+      this.nextToken();
+      return args;
     }
 
     this.nextToken();
-    const value = this.parseExpression(PrecedenceOrder.LOWEST);
-    if (value) {
-      statement.value = value;
+    // first arg
+    const firstArg = this.parseExpression(PrecedenceOrder.LOWEST);
+    if (firstArg) {
+      args.push(firstArg);
     }
 
-    if (this.peekTokenIs(TokenType.SEMICOLON)) {
+    // rest of the args
+    while (this.peekTokenIs(TokenType.COMMA)) {
       this.nextToken();
+      this.nextToken();
+      let arg = this.parseExpression(PrecedenceOrder.LOWEST);
+      if (arg) {
+        args.push(arg);
+      }
     }
 
-    return statement;
-  }
-
-  private parseReturnStatement(): ReturnStatement | null {
-    if (this.currToken === undefined) {
+    if (!this.expectPeek(TokenType.RPAREN)) {
       return null;
     }
-    assertTokenType(this.currToken, TokenType.RETURN);
-    const statement = new ReturnStatement(this.currToken);
-    this.nextToken();
 
-    const returnValue = this.parseExpression(PrecedenceOrder.LOWEST);
-    if (returnValue) {
-      statement.returnValue = returnValue;
-    }
-
-    if (this.peekTokenIs(TokenType.SEMICOLON)) {
-      this.nextToken();
-    }
-
-    return statement;
+    return args;
   }
 
-  private parseExpressionStatement(): ExpressionStatement | null {
-    if (this.currToken === undefined) {
-      return null;
+  public peekPrecedence(): PrecedenceOrder {
+    if (this.hasPrecedence(this.peekToken.type)) {
+      return this.precedences[this.peekToken.type];
     }
-    const statement = new ExpressionStatement(this.currToken);
-    const expression = this.parseExpression(PrecedenceOrder.LOWEST);
+    return PrecedenceOrder.LOWEST;
+  }
 
-    if (expression) {
-      statement.expression = expression;
+  public currPrecedence(): PrecedenceOrder {
+    if (this.hasPrecedence(this.currToken.type)) {
+      return this.precedences[this.currToken.type];
     }
+    return PrecedenceOrder.LOWEST;
+  }
 
-    if (this.peekTokenIs(TokenType.SEMICOLON)) {
+  public hasPrecedence(
+    tokenType: TokenType
+  ): tokenType is SupportedPrecedenceTokens {
+    return this.precedences.hasOwnProperty(tokenType);
+  }
+
+  public peekTokenIs(tokenType: TokenType): boolean {
+    return this.peekToken.type === tokenType;
+  }
+
+  public currTokenIs(tokenType: TokenType): boolean {
+    return this.currToken.type === tokenType;
+  }
+
+  public expectPeek(tokenType: TokenType): boolean {
+    if (this.peekTokenIs(tokenType)) {
       this.nextToken();
+      return true;
     }
-
-    return statement;
+    this.pushTokenTypeError(tokenType);
+    return false;
   }
 
   private registerPrefix(tokenType: TokenType, fn: PrefixParseFunction): void {
@@ -318,33 +340,13 @@ export default class Parser {
     this.infixParseFns[tokenType] = fn;
   }
 
-  private peekPrecedence(): PrecedenceOrder {
-    const defaultPrecedence = PrecedenceOrder.LOWEST;
-    if (this.peekToken === undefined) {
-      return defaultPrecedence;
-    }
-    if (this.hasPrecedence(this.peekToken.type)) {
-      return this.precedences[this.peekToken.type] as PrecedenceOrder;
-    }
-    return defaultPrecedence;
-  }
-
   private pushTokenTypeError(tokenType: TokenType): void {
     this.errors.push(
-      `Expected next token to be \`${tokenType}\`, got \`${this.peekToken?.type}\` instead`
+      `Expected next token to be \`${tokenType}\`, got \`${this.peekToken.type}\` instead`
     );
   }
 
   private pushNoPrefixParseFnError(tokenType: TokenType): void {
     this.errors.push(`No prefix parse function for ${tokenType} found`);
-  }
-
-  private hasPrecedence(
-    tokenType: TokenType
-  ): tokenType is SupportedPrecedenceTokens {
-    if (tokenType === undefined) {
-      return false;
-    }
-    return this.precedences.hasOwnProperty(tokenType);
   }
 }

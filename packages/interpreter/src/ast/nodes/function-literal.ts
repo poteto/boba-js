@@ -1,10 +1,9 @@
 import { FunctionLiteralToken } from '../../token/';
-import { Identifier, Expression } from '../../ast/';
-import BlockStatement from './block-statement';
+import { BlockStatement, Identifier, Expression } from '../../ast/';
 
 export default class FunctionLiteral implements Expression {
-  public parameters?: Identifier[];
-  public body?: BlockStatement;
+  public parameters: Identifier[] | null = null;
+  public body: BlockStatement | null = null;
   constructor(public token: FunctionLiteralToken) {}
 
   expressionNode() {}

@@ -8,58 +8,11 @@ import {
   IntegerLiteral,
   PrefixExpression,
   InfixExpression,
-  Expression,
-  Identifier,
   BooleanLiteral,
 } from '../ast/';
 import IfExpression from '../ast/nodes/if-expression';
 import FunctionLiteral from '../ast/nodes/function-literal';
-import { TokenType } from '../token';
-
-function testIntegerLiteral(expr: Expression | undefined, value: number): void {
-  expect(expr).toBeInstanceOf(IntegerLiteral);
-  expect((expr as IntegerLiteral).value).toBe(value);
-  expect((expr as IntegerLiteral).tokenLiteral()).toBe(value.toString());
-}
-function testBooleanLiteral(
-  expr: Expression | undefined,
-  value: boolean
-): void {
-  expect(expr).toBeInstanceOf(BooleanLiteral);
-  expect((expr as Identifier).value).toBe(value);
-  expect((expr as Identifier).tokenLiteral()).toBe(value);
-}
-function testIdentifier(expr: Expression | undefined, value: string): void {
-  expect(expr).toBeInstanceOf(Identifier);
-  expect((expr as Identifier).value).toBe(value);
-  expect((expr as Identifier).tokenLiteral()).toBe(value);
-}
-function testLiteralExpression(
-  expr: Expression | undefined,
-  expected: unknown
-): void {
-  switch (typeof expected) {
-    case 'number':
-      return testIntegerLiteral(expr, expected);
-    case 'string':
-      return testIdentifier(expr, expected);
-    case 'boolean':
-      return testBooleanLiteral(expr, expected);
-    default:
-      break;
-  }
-}
-function testInfixExpression(
-  expr: Expression,
-  left: unknown,
-  operator: string,
-  right: unknown
-): void {
-  expect(expr).toBeInstanceOf(InfixExpression);
-  testLiteralExpression((expr as InfixExpression).left, left);
-  expect((expr as InfixExpression).operator).toBe(operator);
-  testLiteralExpression((expr as InfixExpression).right, right);
-}
+import CallExpression from '../ast/nodes/call-expression';
 
 describe('Parser', () => {
   describe('when the program is valid', () => {
@@ -155,7 +108,7 @@ describe('Parser', () => {
       const program = parser.parseProgram();
 
       expect(program).not.toBeNull();
-      expect(program?.statements.length).toBe(4);
+      expect(program?.statements.length).toBe(expected.length);
       expect(parser.errors.length).toBe(0);
 
       (program.statements as ExpressionStatement[]).forEach(statement => {
@@ -200,7 +153,7 @@ describe('Parser', () => {
       const program = parser.parseProgram();
 
       expect(program).not.toBeNull();
-      expect(program?.statements.length).toBe(11);
+      expect(program?.statements.length).toBe(expected.length);
       expect(parser.errors.length).toBe(0);
 
       (program.statements as ExpressionStatement[]).forEach(statement => {
@@ -236,6 +189,9 @@ describe('Parser', () => {
         2 / (5 + 5);
         -(5 + 5);
         !(true == true);
+        a + add(b * c) + d;
+        add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8));
+        add(a + b + c * d / f + g);
       `.trim();
       const expected = [
         '((-a) * b)',
@@ -260,6 +216,9 @@ describe('Parser', () => {
         '(2 / (5 + 5))',
         '(-(5 + 5))',
         '(!(true == true))',
+        '((a + add((b * c))) + d)',
+        'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))',
+        'add((((a + b) + ((c * d) / f)) + g))',
       ];
 
       const lexer = new Lexer(input);
@@ -267,7 +226,7 @@ describe('Parser', () => {
       const program = parser.parseProgram();
 
       expect(program).not.toBeNull();
-      expect(program?.statements.length).toBe(22);
+      expect(program?.statements.length).toBe(expected.length);
       expect(parser.errors.length).toBe(0);
 
       (program.statements as ExpressionStatement[]).forEach(statement =>
@@ -291,7 +250,7 @@ describe('Parser', () => {
       const program = parser.parseProgram();
 
       expect(program).not.toBeNull();
-      expect(program?.statements.length).toBe(2);
+      expect(program?.statements.length).toBe(expected.length);
       expect(parser.errors.length).toBe(0);
 
       (program.statements as ExpressionStatement[]).forEach(statement => {
@@ -316,7 +275,7 @@ describe('Parser', () => {
       const program = parser.parseProgram();
 
       expect(program).not.toBeNull();
-      expect(program?.statements.length).toBe(2);
+      expect(program?.statements.length).toBe(expected.length);
       expect(parser.errors.length).toBe(0);
 
       (program.statements as ExpressionStatement[]).forEach(statement => {
@@ -348,12 +307,36 @@ describe('Parser', () => {
       const program = parser.parseProgram();
 
       expect(program).not.toBeNull();
-      expect(program?.statements.length).toBe(4);
+      expect(program?.statements.length).toBe(expected.length);
       expect(parser.errors.length).toBe(0);
 
       (program.statements as ExpressionStatement[]).forEach(statement => {
         expect(statement).toBeInstanceOf(ExpressionStatement);
         expect(statement.expression).toBeInstanceOf(FunctionLiteral);
+      });
+
+      expected.forEach((test, idx) =>
+        expect(program.statements[idx].toString()).toBe(test)
+      );
+    });
+
+    it('parses call expressions', () => {
+      const input = `
+        add(1, 2 * 3, 4 + 5);
+      `.trim();
+      const expected = ['add(1, (2 * 3), (4 + 5))'];
+
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer);
+      const program = parser.parseProgram();
+
+      expect(program).not.toBeNull();
+      expect(program?.statements.length).toBe(expected.length);
+      expect(parser.errors.length).toBe(0);
+
+      (program.statements as ExpressionStatement[]).forEach(statement => {
+        expect(statement).toBeInstanceOf(ExpressionStatement);
+        expect(statement.expression).toBeInstanceOf(CallExpression);
       });
 
       expected.forEach((test, idx) =>
