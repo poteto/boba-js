@@ -2,8 +2,7 @@ import { Token } from '../../token/';
 import { Expression, Statement } from '../../ast/';
 
 export default class ExpressionStatement implements Statement {
-  public expression?: Expression;
-  constructor(public token: Token) {}
+  constructor(public token: Token, public expression: Expression | null) {}
 
   statementNode() {}
   tokenLiteral() {

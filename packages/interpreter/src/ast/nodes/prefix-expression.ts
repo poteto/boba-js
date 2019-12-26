@@ -2,7 +2,7 @@ import { Token } from '../../token/';
 import { Expression } from '../../ast/';
 
 export default class PrefixExpression implements Expression {
-  public right?: Expression;
+  public right: Expression | null = null;
   constructor(public token: Token, public operator: string) {}
 
   expressionNode() {}

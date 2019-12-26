@@ -2,7 +2,7 @@ import { ReturnStatementToken } from '../../token/';
 import { Expression, Statement } from '../../ast/';
 
 export default class ReturnStatement implements Statement {
-  public returnValue?: Expression;
+  public returnValue: Expression | null = null;
   constructor(public token: ReturnStatementToken) {}
 
   statementNode() {}

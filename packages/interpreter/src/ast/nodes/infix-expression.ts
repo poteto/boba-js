@@ -2,9 +2,12 @@ import { Token } from '../../token/';
 import { Expression } from '../../ast/';
 
 export default class InfixExpression implements Expression {
-  public left?: Expression;
-  public right?: Expression;
-  constructor(public token: Token, public operator: string) {}
+  public right: Expression | null = null;
+  constructor(
+    public token: Token,
+    public operator: string,
+    public left: Expression | null = null
+  ) {}
 
   expressionNode() {}
   tokenLiteral() {

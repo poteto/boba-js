@@ -1,7 +1,7 @@
 import { Token, TokenType, LiteralType } from '../token';
 import { AssertionError } from 'assert';
 
-export function assertTokenType<T extends TokenType>(
+export default function assertTokenType<T extends TokenType>(
   token: Token,
   ...assertedTokenTypes: T[]
 ): asserts token is { type: T; literal: LiteralType } {
