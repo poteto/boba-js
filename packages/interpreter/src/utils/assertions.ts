@@ -1,92 +1,16 @@
-import {
-  Token,
-  TokenType,
-  LetStatementToken,
-  IntegerLiteralToken,
-  ReturnStatementToken,
-  IdentToken,
-  BooleanLiteralToken,
-  IfExpressionToken,
-  LeftBraceToken,
-  LiteralType,
-} from '../token';
+import { Token, TokenType, LiteralType } from '../token';
 import { AssertionError } from 'assert';
-
-export function assertIsLetToken(
-  token: Token
-): asserts token is LetStatementToken {
-  if (token.type !== TokenType.LET) {
-    throw new AssertionError({
-      message: `Token is not of type ${TokenType.LET}`,
-    });
-  }
-}
-
-export function assertIsIdentToken(token: Token): asserts token is IdentToken {
-  if (token.type !== TokenType.IDENT) {
-    throw new AssertionError({
-      message: `Token is not of type ${TokenType.IDENT}`,
-    });
-  }
-}
-
-export function assertIsIntToken(
-  token: Token
-): asserts token is IntegerLiteralToken {
-  if (token.type !== TokenType.INT) {
-    throw new AssertionError({
-      message: `Token is not of type ${TokenType.INT}`,
-    });
-  }
-}
-
-export function assertIsReturnToken(
-  token: Token
-): asserts token is ReturnStatementToken {
-  if (token.type !== TokenType.RETURN) {
-    throw new AssertionError({
-      message: `Token is not of type ${TokenType.RETURN}`,
-    });
-  }
-}
-
-export function assertIsBooleanLiteralToken(
-  token: Token
-): asserts token is BooleanLiteralToken {
-  if (!(token.type === TokenType.TRUE || token.type === TokenType.FALSE)) {
-    throw new AssertionError({
-      message: `Token is not of type ${TokenType.TRUE} or ${TokenType.FALSE}`,
-    });
-  }
-}
-
-export function assertIsIfExpressionToken(
-  token: Token
-): asserts token is IfExpressionToken {
-  if (token.type !== TokenType.IF) {
-    throw new AssertionError({
-      message: `Token is not of type ${TokenType.IF}`,
-    });
-  }
-}
-
-export function assertIsLeftBraceToken(
-  token: Token
-): asserts token is LeftBraceToken {
-  if (token.type !== TokenType.LBRACE) {
-    throw new AssertionError({
-      message: `Token is not of type ${TokenType.LBRACE}`,
-    });
-  }
-}
 
 export function assertTokenType<T extends TokenType>(
   token: Token,
-  assertedTokenType: T
+  ...assertedTokenTypes: T[]
 ): asserts token is { type: T; literal: LiteralType } {
-  if (token.type !== assertedTokenType) {
+  const satisfiesAssertion = assertedTokenTypes.some(
+    type => type === token.type
+  );
+  if (!satisfiesAssertion) {
     throw new AssertionError({
-      message: `Token is not of type ${assertedTokenType}`,
+      message: `Token type is not: ${assertedTokenTypes.join(' OR ')}`,
     });
   }
 }

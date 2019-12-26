@@ -2,13 +2,7 @@ import Lexer from '../lexer';
 import { Token, TokenType } from '../token';
 import { Statement, Expression } from '../ast';
 
-import {
-  assertIsIdentToken,
-  assertIsLetToken,
-  assertIsReturnToken,
-  assertIsLeftBraceToken,
-  assertTokenType,
-} from '../utils/assertions';
+import { assertTokenType } from '../utils/assertions';
 import {
   Program,
   Identifier,
@@ -184,7 +178,7 @@ export default class Parser {
     if (this.currToken === undefined) {
       return null;
     }
-    assertIsLeftBraceToken(this.currToken);
+    assertTokenType(this.currToken, TokenType.LBRACE);
     const block = new BlockStatement(this.currToken);
     this.nextToken();
 
@@ -251,13 +245,13 @@ export default class Parser {
     if (this.currToken === undefined) {
       return null;
     }
-    assertIsLetToken(this.currToken);
+    assertTokenType(this.currToken, TokenType.LET);
     const statement = new LetStatement(this.currToken);
 
     if (!this.expectPeek(TokenType.IDENT)) {
       return null;
     }
-    assertIsIdentToken(this.currToken);
+    assertTokenType(this.currToken, TokenType.IDENT);
 
     statement.name = new Identifier(this.currToken, this.currToken.literal);
 
@@ -282,7 +276,7 @@ export default class Parser {
     if (this.currToken === undefined) {
       return null;
     }
-    assertIsReturnToken(this.currToken);
+    assertTokenType(this.currToken, TokenType.RETURN);
     const statement = new ReturnStatement(this.currToken);
     this.nextToken();
 
