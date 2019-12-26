@@ -1,15 +1,13 @@
 import Parser, { PrecedenceOrder } from '..';
 import { IfExpression, Expression } from '../../ast';
-import { assertIsIfExpressionToken } from '../../utils/assertions';
+import { assertTokenType } from '../../utils/assertions';
 import { TokenType } from '../../token';
 
-export default function parseIfExpression(
-  this: Parser
-): Expression | null {
+export default function parseIfExpression(this: Parser): Expression | null {
   if (this.currToken === undefined) {
     throw new TypeError(`Was expecting ${this.currToken} to be defined`);
   }
-  assertIsIfExpressionToken(this.currToken);
+  assertTokenType(this.currToken, TokenType.IF);
   const expr = new IfExpression(this.currToken);
 
   if (!this.expectPeek(TokenType.LPAREN)) {
