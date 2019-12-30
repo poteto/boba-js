@@ -1,7 +1,13 @@
-import { InternalObject, InternalInteger, InternalBoolean } from './object';
-import Lexer from './lexer';
-import Parser from './parser';
-import evaluate from './eval';
+import {
+  InternalObject,
+  InternalInteger,
+  InternalBoolean,
+  InternalNull,
+  InternalError,
+} from './internal-objects';
+import Lexer from '../lexer';
+import Parser from '../parser';
+import evaluate from '.';
 
 function testEval(input: string): InternalObject | null {
   const lexer = new Lexer(input);
@@ -81,5 +87,83 @@ describe('when evaluating valid programs', () => {
       expect(evaluated).toBeInstanceOf(InternalBoolean);
       expect((evaluated as InternalBoolean).value).toBe(test.expected);
     });
+  });
+
+  it('evaluates if/else expressions', () => {
+    const tests = [
+      { input: 'if (true) { 10 }', expected: 10 },
+      { input: 'if (false) { 10 }', expected: null },
+      { input: 'if (1) { 10 }', expected: 10 },
+      { input: 'if (1 < 2) { 10 }', expected: 10 },
+      { input: 'if (1 > 2) { 10 }', expected: null },
+      { input: 'if (1 > 2) { 10 } else { 20 }', expected: 20 },
+      { input: 'if (1 < 2) { 10 } else { 20 }', expected: 10 },
+    ];
+
+    const results = tests.map(({ input }) => testEval(input));
+    expect(results.filter(res => res instanceof InternalNull).length).toBe(2);
+    expect(results.filter(res => res instanceof InternalInteger).length).toBe(
+      5
+    );
+
+    tests.forEach(test => {
+      const evaluated = testEval(test.input);
+      if (evaluated instanceof InternalInteger) {
+        expect((evaluated as InternalInteger).value).toBe(test.expected);
+      }
+    });
+  });
+
+  it('evaluates return statements', () => {
+    const tests = [
+      { input: 'return 10', expected: 10 },
+      { input: 'return 10; 9;', expected: 10 },
+      { input: 'return 2 * 5; 9;', expected: 10 },
+      { input: '9; return 2 * 5; 9;', expected: 10 },
+      {
+        input: `
+        if (10 > 1) {
+          if (10 > 1) {
+            return 10;
+          }
+          return 1;
+        }
+      `,
+        expected: 10,
+      },
+    ];
+
+    tests.forEach(test => {
+      const evaluated = testEval(test.input);
+      expect(evaluated).toBeInstanceOf(InternalInteger);
+      expect((evaluated as InternalInteger).value).toBe(test.expected);
+    });
+  });
+});
+
+describe('when evaluating invalid programs', () => {
+  test.each([
+    ['5 + true;', 'TypeError: INTEGER + BOOLEAN'],
+    ['5 + true; 5;', 'TypeError: INTEGER + BOOLEAN'],
+    ['-true', 'UnknownOperator: -BOOLEAN'],
+    ['-false', 'UnknownOperator: -BOOLEAN'],
+    ['true + false', 'UnknownOperator: BOOLEAN + BOOLEAN'],
+    ['5; true + false; 5', 'UnknownOperator: BOOLEAN + BOOLEAN'],
+    ['if (10 > 1) { true + false; }', 'UnknownOperator: BOOLEAN + BOOLEAN'],
+    [
+      `
+      if (10 > 1) {
+        if (10 > 1) {
+          return true + false;
+        }
+        return 1;
+      }
+    `,
+      'UnknownOperator: BOOLEAN + BOOLEAN',
+    ],
+  ])('it evaluates and handles errors for: %p', (input, expected) => {
+    const evaluated = testEval(input);
+    expect(evaluated).toBeInstanceOf(InternalError);
+    expect((evaluated as InternalError).message).toBe(expected);
   });
 });
