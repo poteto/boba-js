@@ -11,6 +11,9 @@ import {
   ReturnStatement,
   LetStatement,
   Identifier,
+  CallExpression,
+  Expression,
+  FunctionLiteral,
 } from '../ast';
 import {
   Environment,
@@ -22,8 +25,10 @@ import {
   InternalError,
   InternalObjectType,
   createError,
+  InternalFunction,
 } from './internal-objects';
 import { Maybe } from '../utils/maybe';
+import { ArgumentError, isArgumentError } from './internal-objects/internal-error';
 
 const INTERNAL_NULL = new InternalNull();
 const INTERNAL_TRUE = new InternalBoolean(true);
@@ -44,7 +49,7 @@ function isTruthy(obj: Maybe<InternalObject>): boolean {
   }
 }
 
-function isError(obj: Maybe<InternalObject>): boolean {
+function isError(obj: Maybe<InternalObject>): obj is InternalError {
   return obj !== null ? obj.type === InternalObjectType.ERROR_OBJ : false;
 }
 
@@ -214,6 +219,76 @@ function evaluateIdentifier(
   return value;
 }
 
+function evaluateExpressions(
+  exprs: Expression[],
+  env: Environment
+): ArgumentError | Maybe<InternalObject>[] {
+  let results: Maybe<InternalObject>[] = [];
+  for (let expr of exprs) {
+    const evaluated = evaluate(expr, env);
+    if (isError(evaluated)) {
+      return [evaluated];
+    }
+    results.push(evaluated);
+  }
+  return results;
+}
+
+function applyFunction(
+  fn: Maybe<InternalObject>,
+  args: Maybe<InternalObject>[]
+): Maybe<InternalObject> {
+  if (fn === null) {
+    throw new Error('fn is null in applyFunction');
+  }
+  if (!(fn instanceof InternalFunction)) {
+    return createError('TypeError: ', `${fn.type} is not a function`);
+  }
+  const extendedEnv = extendFunctionEnvironment(fn, args);
+  const evaluated = evaluate(fn.body, extendedEnv);
+  return unwrapReturnValue(evaluated);
+}
+
+/**
+ * `inner` is the environment that keeps track of the function literal's
+ * parameters and the values that those parameters are bound to.
+ *
+ * For example:
+ *    let add = fn(x, y) { x + y; };
+ *    foo(1, 3);
+ *
+ *    inner: { x: 1, y: 3 };
+ *
+ * `outer` is the lexical scope for the function. It allows the function's
+ * block statement to close over variables from outside the block scope.
+ *
+ * For example:
+ *    let a = 5;
+ *    let add = fn(x, y) { a + x + y; };
+ *    foo(1, 3);
+ *
+ *    inner: { x: 1, y: 3 };
+ *    outer: { a: 5, add: fn };
+ */
+function extendFunctionEnvironment(
+  fn: InternalFunction,
+  args: Maybe<InternalObject>[]
+) {
+  const inner = Environment.encloseWith(fn.env);
+  for (let i = 0; i < fn.parameters.length; i++) {
+    const param = fn.parameters[i];
+    inner.set(param.value, args[i]);
+  }
+  return inner;
+}
+
+function unwrapReturnValue(obj: Maybe<InternalObject>): Maybe<InternalObject> {
+  if (obj instanceof InternalReturnValue) {
+    return obj.value;
+  }
+  return obj;
+}
+
 export default function evaluate(
   node: Maybe<ASTNode>,
   env: Environment
@@ -275,6 +350,25 @@ export default function evaluate(
   }
   if (node instanceof Identifier) {
     return evaluateIdentifier(node, env);
+  }
+  if (node instanceof FunctionLiteral) {
+    if (node.body !== null && node.parameters !== null) {
+      return new InternalFunction(env, node.body, node.parameters);
+    }
+    throw new Error('Function body and parameters were null');
+  }
+  if (node instanceof CallExpression) {
+    const fn = evaluate(node.fn, env);
+    if (isError(fn)) {
+      return fn;
+    }
+    if (node.args !== null) {
+      const args = evaluateExpressions(node.args, env);
+      if (isArgumentError(args)) {
+        return args[0];
+      }
+      return applyFunction(fn, args);
+    }
   }
   if (node === null) {
     throw new Error('Was not expecting node to be null');
