@@ -9,10 +9,20 @@ type EnvironmentStore = {
 
 export default class Environment {
   store: EnvironmentStore = Object.create(null);
+  outer?: Environment;
+
+  static encloseWith(outer: Environment): Environment {
+    const inner = new Environment();
+    inner.outer = outer;
+    return inner;
+  }
 
   get(key: EnvironmentStoreKey): Maybe<InternalObject> {
     if (hasOwnProperty(this.store, key)) {
       return this.store[key];
+    }
+    if (this.outer) {
+      return this.outer.get(key);
     }
     return null;
   }

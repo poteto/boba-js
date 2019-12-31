@@ -152,6 +152,37 @@ describe('when evaluating valid programs', () => {
     expect(evaluated).toBeInstanceOf(InternalInteger);
     expect((evaluated as InternalInteger).value).toBe(expected);
   });
+
+  test.each([
+    ['let identity = fn(x) { x; }; identity(5);', 5],
+    ['let identity = fn(x) { return x; }; identity(5);', 5],
+    ['let double = fn(x) { x * 2; }; double(5);', 10],
+    ['let add = fn(x, y) { x + y; }; add(5, 5);', 10],
+    ['let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));', 20],
+    ['fn(x) { x; }(5)', 5],
+    [
+      `
+      let a = true;
+      let b = 10000;
+      let x = -1000;
+      let y = -10000;
+      let newAdder = fn(x) {
+        let a = 5;
+        fn(y) {
+          let b = 6;
+          a + b + x + y;
+        };
+      };
+      let addTwo = newAdder(2);
+      addTwo(2);
+    `,
+      15,
+    ],
+  ])('it evaluates let statements for: %p', (input, expected) => {
+    const evaluated = testEval(input);
+    expect(evaluated).toBeInstanceOf(InternalInteger);
+    expect((evaluated as InternalInteger).value).toBe(expected);
+  });
 });
 
 describe('when evaluating invalid programs', () => {
