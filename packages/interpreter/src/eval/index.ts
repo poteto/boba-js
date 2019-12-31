@@ -119,14 +119,14 @@ function evaluateIntegerInfixExpression(
   right: Maybe<InternalInteger>,
   env: Environment
 ): InternalObject {
-  const leftValue = left?.value;
-  const rightValue = right?.value;
-
-  if (!leftValue || !rightValue) {
+  if (left === null || right === null) {
     throw new Error(
       'Cannot evaluate integer infix expression where left or right is null'
     );
   }
+
+  const leftValue = left.value;
+  const rightValue = right.value;
 
   switch (operator) {
     case '+':

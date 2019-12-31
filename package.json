@@ -9,6 +9,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:mem": "jest --runInBand --logHeapUsage",
+    "test:mem-watch": "jest --runInBand --logHeapUsage --watch",
     "test:debug": "node --expose-gc --inspect ./node_modules/.bin/jest --runInBand --logHeapUsage --watch"
   },
   "author": "Lauren Tan <arr@sugarpirate.com> (http://www.sugarpirate.com)",
