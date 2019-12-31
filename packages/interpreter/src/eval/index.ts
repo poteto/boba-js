@@ -9,8 +9,11 @@ import {
   IfExpression,
   BlockStatement,
   ReturnStatement,
+  LetStatement,
+  Identifier,
 } from '../ast';
 import {
+  Environment,
   InternalObject,
   InternalInteger,
   InternalBoolean,
@@ -45,10 +48,13 @@ function isError(obj: Maybe<InternalObject>): boolean {
   return obj !== null ? obj.type === InternalObjectType.ERROR_OBJ : false;
 }
 
-function evaluateProgram(program: Program): Maybe<InternalObject> {
+function evaluateProgram(
+  program: Program,
+  env: Environment
+): Maybe<InternalObject> {
   let result: Maybe<InternalObject> = null;
   for (const statement of program.statements) {
-    result = evaluate(statement);
+    result = evaluate(statement, env);
     if (result instanceof InternalReturnValue) {
       return result.value;
     }
@@ -59,10 +65,13 @@ function evaluateProgram(program: Program): Maybe<InternalObject> {
   return result;
 }
 
-function evaluateBlockStatement(block: BlockStatement): Maybe<InternalObject> {
+function evaluateBlockStatement(
+  block: BlockStatement,
+  env: Environment
+): Maybe<InternalObject> {
   let result: Maybe<InternalObject> = null;
   for (const statement of block.statements) {
-    result = evaluate(statement);
+    result = evaluate(statement, env);
     if (result !== null) {
       if (
         result instanceof InternalReturnValue ||
@@ -76,7 +85,8 @@ function evaluateBlockStatement(block: BlockStatement): Maybe<InternalObject> {
 }
 
 function evaluateBangOperatorExpression(
-  right: Maybe<InternalObject>
+  right: Maybe<InternalObject>,
+  env: Environment
 ): InternalObject {
   switch (right) {
     case INTERNAL_FALSE:
@@ -89,7 +99,8 @@ function evaluateBangOperatorExpression(
 }
 
 function evaluateMinusPrefixOperatorExpression(
-  right: Maybe<InternalObject>
+  right: Maybe<InternalObject>,
+  env: Environment
 ): InternalObject {
   if (!(right instanceof InternalInteger)) {
     return createError('UnknownOperator: -', right?.type);
@@ -100,7 +111,8 @@ function evaluateMinusPrefixOperatorExpression(
 function evaluateIntegerInfixExpression(
   operator: string,
   left: Maybe<InternalInteger>,
-  right: Maybe<InternalInteger>
+  right: Maybe<InternalInteger>,
+  env: Environment
 ): InternalObject {
   const leftValue = left?.value;
   const rightValue = right?.value;
@@ -140,13 +152,14 @@ function evaluateIntegerInfixExpression(
 
 function evaluatePrefixExpression(
   operator: string,
-  right: Maybe<InternalObject>
+  right: Maybe<InternalObject>,
+  env: Environment
 ): InternalObject {
   switch (operator) {
     case '!':
-      return evaluateBangOperatorExpression(right);
+      return evaluateBangOperatorExpression(right, env);
     case '-':
-      return evaluateMinusPrefixOperatorExpression(right);
+      return evaluateMinusPrefixOperatorExpression(right, env);
     default:
       return createError('UnknownOperator: ', operator, right?.type);
   }
@@ -155,10 +168,11 @@ function evaluatePrefixExpression(
 function evaluateInfixExpression(
   operator: string,
   left: Maybe<InternalObject>,
-  right: Maybe<InternalObject>
+  right: Maybe<InternalObject>,
+  env: Environment
 ): InternalObject {
   if (left instanceof InternalInteger && right instanceof InternalInteger) {
-    return evaluateIntegerInfixExpression(operator, left, right);
+    return evaluateIntegerInfixExpression(operator, left, right, env);
   }
   if (operator === '==') {
     return lookupBooleanConstant(left === right);
@@ -169,34 +183,46 @@ function evaluateInfixExpression(
   if (left?.type !== right?.type) {
     return createError('TypeError: ', left?.type, operator, right?.type);
   }
-  return createError(
-    'UnknownOperator: ',
-    left?.type,
-    operator,
-    right?.type
-  );
+  return createError('UnknownOperator: ', left?.type, operator, right?.type);
 }
 
-function evaluateIfExpression(expr: IfExpression): Maybe<InternalObject> {
-  const condition = evaluate(expr.condition);
+function evaluateIfExpression(
+  expr: IfExpression,
+  env: Environment
+): Maybe<InternalObject> {
+  const condition = evaluate(expr.condition, env);
   if (isError(condition)) {
     return condition;
   }
   if (isTruthy(condition)) {
-    return evaluate(expr.consequence);
+    return evaluate(expr.consequence, env);
   } else if (expr.alternative !== null) {
-    return evaluate(expr.alternative);
+    return evaluate(expr.alternative, env);
   } else {
     return INTERNAL_NULL;
   }
 }
 
-export default function evaluate(node: Maybe<ASTNode>): Maybe<InternalObject> {
+function evaluateIdentifier(
+  node: Identifier,
+  env: Environment
+): Maybe<InternalObject> {
+  const value = env.get(node.value);
+  if (value === null) {
+    return createError('ReferenceError: ', `${node.value} is not defined`);
+  }
+  return value;
+}
+
+export default function evaluate(
+  node: Maybe<ASTNode>,
+  env: Environment
+): Maybe<InternalObject> {
   if (node instanceof Program) {
-    return evaluateProgram(node);
+    return evaluateProgram(node, env);
   }
   if (node instanceof ExpressionStatement) {
-    return evaluate(node.expression);
+    return evaluate(node.expression, env);
   }
   if (node instanceof IntegerLiteral) {
     return new InternalInteger(node.value);
@@ -205,31 +231,31 @@ export default function evaluate(node: Maybe<ASTNode>): Maybe<InternalObject> {
     return lookupBooleanConstant(node.value);
   }
   if (node instanceof PrefixExpression) {
-    const right = evaluate(node.right);
+    const right = evaluate(node.right, env);
     if (isError(right)) {
       return right;
     }
-    return evaluatePrefixExpression(node.operator, right);
+    return evaluatePrefixExpression(node.operator, right, env);
   }
   if (node instanceof InfixExpression) {
-    const left = evaluate(node.left);
+    const left = evaluate(node.left, env);
     if (isError(left)) {
       return left;
     }
-    const right = evaluate(node.right);
+    const right = evaluate(node.right, env);
     if (isError(right)) {
       return right;
     }
-    return evaluateInfixExpression(node.operator, left, right);
+    return evaluateInfixExpression(node.operator, left, right, env);
   }
   if (node instanceof BlockStatement) {
-    return evaluateBlockStatement(node);
+    return evaluateBlockStatement(node, env);
   }
   if (node instanceof IfExpression) {
-    return evaluateIfExpression(node);
+    return evaluateIfExpression(node, env);
   }
   if (node instanceof ReturnStatement) {
-    const value = evaluate(node.returnValue);
+    const value = evaluate(node.returnValue, env);
     if (isError(value)) {
       return value;
     }
@@ -237,8 +263,21 @@ export default function evaluate(node: Maybe<ASTNode>): Maybe<InternalObject> {
       return new InternalReturnValue(value);
     }
   }
+  if (node instanceof LetStatement) {
+    const value = evaluate(node.value, env);
+    if (isError(value)) {
+      return value;
+    }
+    if (node.name?.value) {
+      env.set(node.name.value, value);
+    }
+    return value;
+  }
+  if (node instanceof Identifier) {
+    return evaluateIdentifier(node, env);
+  }
   if (node === null) {
     throw new Error('Was not expecting node to be null');
   }
-  throw new Error(`Unhandled node type - ${node.toString()}`);
+  throw new Error(`Unhandled node type - ${node}`);
 }

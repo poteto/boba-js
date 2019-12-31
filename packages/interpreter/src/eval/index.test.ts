@@ -8,11 +8,13 @@ import {
 import Lexer from '../lexer';
 import Parser from '../parser';
 import evaluate from '.';
+import Environment from './internal-objects/environment';
 
 function testEval(input: string): InternalObject | null {
   const lexer = new Lexer(input);
   const parser = new Parser(lexer);
-  return evaluate(parser.parseProgram());
+  const env = new Environment();
+  return evaluate(parser.parseProgram(), env);
 }
 
 describe('when evaluating valid programs', () => {
@@ -139,6 +141,17 @@ describe('when evaluating valid programs', () => {
       expect((evaluated as InternalInteger).value).toBe(test.expected);
     });
   });
+
+  test.each([
+    ['let a = 5; a;', 5],
+    ['let a = 5 * 5; a;', 25],
+    ['let a = 5; let b = a; b;', 5],
+    ['let a = 5; let b = a; let c = a + b + 5; c;', 15],
+  ])('it evaluates let statements for: %p', (input, expected) => {
+    const evaluated = testEval(input);
+    expect(evaluated).toBeInstanceOf(InternalInteger);
+    expect((evaluated as InternalInteger).value).toBe(expected);
+  });
 });
 
 describe('when evaluating invalid programs', () => {
@@ -161,6 +174,7 @@ describe('when evaluating invalid programs', () => {
     `,
       'UnknownOperator: BOOLEAN + BOOLEAN',
     ],
+    ['foo', 'ReferenceError: foo is not defined'],
   ])('it evaluates and handles errors for: %p', (input, expected) => {
     const evaluated = testEval(input);
     expect(evaluated).toBeInstanceOf(InternalError);
