@@ -40,6 +40,8 @@ describe('Lexer', () => {
 
       10 == 10;
       10 != 9;
+      "laurentan";
+      "lauren tan";
     `.trim();
     const expected = [
       { type: TokenType.LET, literal: 'let' },
@@ -114,6 +116,10 @@ describe('Lexer', () => {
       { type: TokenType.INT, literal: '10' },
       { type: TokenType.NOT_EQ, literal: '!=' },
       { type: TokenType.INT, literal: '9' },
+      { type: TokenType.SEMICOLON, literal: ';' },
+      { type: TokenType.STRING, literal: 'laurentan' },
+      { type: TokenType.SEMICOLON, literal: ';' },
+      { type: TokenType.STRING, literal: 'lauren tan' },
       { type: TokenType.SEMICOLON, literal: ';' },
       { type: TokenType.EOF, literal: '' },
     ];

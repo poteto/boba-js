@@ -8,6 +8,8 @@ export const enum TokenType {
   IDENT = 'IDENT',
   INT = 'INT',
 
+  STRING = 'STRING',
+
   // Operators
   ASSIGN = '=',
   PLUS = '+',
@@ -53,6 +55,10 @@ export type BooleanLiteralToken = {
 };
 export type IdentToken = { type: TokenType.IDENT; literal: LiteralType };
 export type IntegerLiteralToken = { type: TokenType.INT; literal: LiteralType };
+export type StringLiteralToken = {
+  type: TokenType.STRING;
+  literal: LiteralType;
+};
 export type LetStatementToken = { type: TokenType.LET; literal: LiteralType };
 export type ReturnStatementToken = {
   type: TokenType.RETURN;

@@ -11,6 +11,7 @@ export { default as LetStatement } from './nodes/let';
 export { default as PrefixExpression } from './nodes/prefix-expression';
 export { default as Program } from './nodes/program';
 export { default as ReturnStatement } from './nodes/return';
+export { default as StringLiteral } from './nodes/string-literal';
 
 export interface ASTNode {
   tokenLiteral(): string;

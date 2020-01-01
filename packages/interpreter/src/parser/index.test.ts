@@ -11,10 +11,11 @@ import {
   BooleanLiteral,
   Program,
   Identifier,
+  IfExpression,
+  FunctionLiteral,
+  CallExpression,
+  StringLiteral,
 } from '../ast/';
-import IfExpression from '../ast/nodes/if-expression';
-import FunctionLiteral from '../ast/nodes/function-literal';
-import CallExpression from '../ast/nodes/call-expression';
 
 function testParse(input: string): [Parser, Program] {
   const lexer = new Lexer(input);
@@ -23,32 +24,46 @@ function testParse(input: string): [Parser, Program] {
 }
 
 describe('when parsing let statements', () => {
-  test.each([
-    [
-      'let x = 5;',
-      'let x = 5;',
-      { token: { literal: '5', type: 'INT' }, value: 5 },
-    ],
-    [
-      'let y = 10;',
-      'let y = 10;',
-      { token: { literal: '10', type: 'INT' }, value: 10 },
-    ],
-    [
-      'let foobar = 1337;',
-      'let foobar = 1337;',
-      { token: { literal: '1337', type: 'INT' }, value: 1337 },
-    ],
-  ])('it parses: %p', (input, string, token) => {
-    const [parser, program] = testParse(input);
-    expect(program).not.toBeNull();
-    expect(parser.errors.length).toBe(0);
-    expect(program?.statements.length).toBe(1);
-    expect(program.toString()).toEqual(string);
+  describe('when they are valid', () => {
+    test.each([
+      [
+        'let x = 5;',
+        'let x = 5;',
+        { token: { literal: '5', type: 'INT' }, value: 5 },
+      ],
+      [
+        'let y = 10;',
+        'let y = 10;',
+        { token: { literal: '10', type: 'INT' }, value: 10 },
+      ],
+      [
+        'let foobar = 1337;',
+        'let foobar = 1337;',
+        { token: { literal: '1337', type: 'INT' }, value: 1337 },
+      ],
+    ])('it parses: %p', (input, string, token) => {
+      const [parser, program] = testParse(input);
+      expect(program).not.toBeNull();
+      expect(parser.errors.length).toBe(0);
+      expect(program?.statements.length).toBe(1);
+      expect(program.toString()).toEqual(string);
 
-    const statement = program?.statements[0] as LetStatement;
-    expect(statement).toBeInstanceOf(LetStatement);
-    expect(statement.value).toEqual(token);
+      const statement = program?.statements[0] as LetStatement;
+      expect(statement).toBeInstanceOf(LetStatement);
+      expect(statement.value).toEqual(token);
+    });
+  });
+
+  describe('when they are invalid', () => {
+    test.each([
+      ['let x 5;', 1],
+      ['let = 10;', 2],
+      ['let foobar 1337;', 1],
+    ])('it parses the errors: %p', (input, errorCount) => {
+      const [parser, program] = testParse(input);
+      expect(program).not.toBeNull();
+      expect(parser.errors.length).toBe(errorCount);
+    });
   });
 });
 
@@ -601,29 +616,35 @@ describe('when parsing function literal expressions', () => {
 });
 
 describe('when parsing call expressions', () => {
-  test.each([
-    ['add(1, 2 * 3, 4 + 5);', 'add(1, (2 * 3), (4 + 5))']
-  ])('it parses: %p', (input, string) => {
-    const [parser, program] = testParse(input);
-    expect(program).not.toBeNull();
-    expect(parser.errors.length).toBe(0);
-    expect(program?.statements.length).toBe(1);
-    expect(program.toString()).toEqual(string);
+  test.each([['add(1, 2 * 3, 4 + 5);', 'add(1, (2 * 3), (4 + 5))']])(
+    'it parses: %p',
+    (input, string) => {
+      const [parser, program] = testParse(input);
+      expect(program).not.toBeNull();
+      expect(parser.errors.length).toBe(0);
+      expect(program?.statements.length).toBe(1);
+      expect(program.toString()).toEqual(string);
 
-    const statement = program?.statements[0] as ExpressionStatement;
-    expect(statement).toBeInstanceOf(ExpressionStatement);
-    expect(statement.expression).toBeInstanceOf(CallExpression);
-  });
+      const statement = program?.statements[0] as ExpressionStatement;
+      expect(statement).toBeInstanceOf(ExpressionStatement);
+      expect(statement.expression).toBeInstanceOf(CallExpression);
+    }
+  );
 });
 
-describe('when parsing invalid programs', () => {
-  test.each([
-    ['let x 5;', 1],
-    ['let = 10;', 2],
-    ['let foobar 1337;', 1],
-  ])('it parses the errors: %p', (input, errorCount) => {
-    const [parser, program] = testParse(input);
-    expect(program).not.toBeNull();
-    expect(parser.errors.length).toBe(errorCount);
-  });
+describe('when parsing string literal expressions', () => {
+  test.each([['"hello world"', 'hello world']])(
+    'it parses: %p',
+    (input, string) => {
+      const [parser, program] = testParse(input);
+      expect(program).not.toBeNull();
+      expect(parser.errors.length).toBe(0);
+      expect(program?.statements.length).toBe(1);
+      expect(program.toString()).toEqual(string);
+
+      const statement = program?.statements[0] as ExpressionStatement;
+      expect(statement).toBeInstanceOf(ExpressionStatement);
+      expect(statement.expression).toBeInstanceOf(StringLiteral);
+    }
+  );
 });

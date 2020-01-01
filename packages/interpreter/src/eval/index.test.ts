@@ -5,6 +5,7 @@ import {
   InternalBoolean,
   InternalNull,
   InternalError,
+  InternalString,
 } from './internal-objects';
 import Lexer from '../lexer';
 import Parser from '../parser';
@@ -171,6 +172,30 @@ describe('when evaluating if/else expressions', () => {
       return;
     }
     expect(evaluated).toBeInstanceOf(InternalNull);
+  });
+});
+
+describe('when evaluating string literal expressions', () => {
+  describe('when they are valid', () => {
+    test.each([
+      ['"hello world!"', 'hello world!'],
+      ['"hello" + " " + "world!"', 'hello world!'],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(evaluated).toBeInstanceOf(InternalString);
+      expect((evaluated as InternalString).value).toBe(expected);
+    });
+  });
+
+  describe('when they are invalid', () => {
+    test.each([['"hello" - "world"', 'UnknownOperator: STRING - STRING']])(
+      'it evaluates: %p',
+      (input, expected) => {
+        const evaluated = testEval(input);
+        expect(evaluated).toBeInstanceOf(InternalError);
+        expect((evaluated as InternalError).message).toBe(expected);
+      }
+    );
   });
 });
 
