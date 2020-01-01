@@ -15,7 +15,9 @@ import {
   FunctionLiteral,
   CallExpression,
   StringLiteral,
+  IndexExpression,
 } from '../ast/';
+import ArrayLiteral from '../ast/nodes/array-literal';
 
 function testParse(input: string): [Parser, Program] {
   const lexer = new Lexer(input);
@@ -545,6 +547,11 @@ describe('when parsing with operator precedence', () => {
       'add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))',
     ],
     ['add(a + b + c * d / f + g);', 'add((((a + b) + ((c * d) / f)) + g))'],
+    ['a * [1, 2, 3, 4][b * c] * d', '((a * ([1, 2, 3, 4][(b * c)])) * d)'],
+    [
+      'add(a * b[0], b[1], 2 * [1, 2][1])',
+      'add((a * (b[0])), (b[1]), (2 * ([1, 2][1])))',
+    ],
   ])('it parses: %p', (input, string) => {
     const [parser, program] = testParse(input);
     expect(program).not.toBeNull();
@@ -630,6 +637,49 @@ describe('when parsing call expressions', () => {
       expect(statement.expression).toBeInstanceOf(CallExpression);
     }
   );
+});
+
+describe.only('when parsing array expressions', () => {
+  describe('when parsing array literals', () => {
+    test.each([
+      ['[]', '[]'],
+      ['[1, 2, 3]', '[1, 2, 3]'],
+      [
+        '[1, 2 + 5 * 2, 3 + 3, 4 / 4, fn(x) { x }]',
+        '[1, (2 + (5 * 2)), (3 + 3), (4 / 4), fn(x) { x }]',
+      ],
+    ])('it parses: %p', (input, string) => {
+      const [parser, program] = testParse(input);
+      expect(program).not.toBeNull();
+      expect(parser.errors.length).toBe(0);
+      expect(program?.statements.length).toBe(1);
+      expect(program.toString()).toEqual(string);
+
+      const statement = program?.statements[0] as ExpressionStatement;
+      expect(statement).toBeInstanceOf(ExpressionStatement);
+      expect(statement.expression).toBeInstanceOf(ArrayLiteral);
+    });
+  });
+
+  describe('when parsing index expressions', () => {
+    test.each([
+      ['foo[0]', '(foo[0])'],
+      ['foo[1 + 1]', '(foo[(1 + 1)])'],
+      ['foo[true]', '(foo[true])'],
+      ['foo[fn(x) { x }]', '(foo[fn(x) { x }])'],
+      ['foo[1 + 1]', '(foo[(1 + 1)])'],
+    ])('it parses: %p', (input, string) => {
+      const [parser, program] = testParse(input);
+      expect(program).not.toBeNull();
+      expect(parser.errors.length).toBe(0);
+      expect(program?.statements.length).toBe(1);
+      expect(program.toString()).toEqual(string);
+
+      const statement = program?.statements[0] as ExpressionStatement;
+      expect(statement).toBeInstanceOf(ExpressionStatement);
+      expect(statement.expression).toBeInstanceOf(IndexExpression);
+    });
+  });
 });
 
 describe('when parsing string literal expressions', () => {
