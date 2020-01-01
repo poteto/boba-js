@@ -28,7 +28,11 @@ import {
   InternalFunction,
 } from './internal-objects';
 import { Maybe } from '../utils/maybe';
-import { ArgumentError, isArgumentError } from './internal-objects/internal-error';
+import {
+  ArgumentError,
+  isArgumentError,
+} from './internal-objects/internal-error';
+import assertNonNullable from '../utils/assert-non-nullable';
 
 const INTERNAL_NULL = new InternalNull();
 const INTERNAL_TRUE = new InternalBoolean(true);
@@ -119,14 +123,11 @@ function evaluateIntegerInfixExpression(
   right: Maybe<InternalInteger>,
   env: Environment
 ): InternalObject {
-  const leftValue = left?.value;
-  const rightValue = right?.value;
+  assertNonNullable(left);
+  assertNonNullable(right);
 
-  if (!leftValue || !rightValue) {
-    throw new Error(
-      'Cannot evaluate integer infix expression where left or right is null'
-    );
-  }
+  const leftValue = left.value;
+  const rightValue = right.value;
 
   switch (operator) {
     case '+':
@@ -238,9 +239,7 @@ function applyFunction(
   fn: Maybe<InternalObject>,
   args: Maybe<InternalObject>[]
 ): Maybe<InternalObject> {
-  if (fn === null) {
-    throw new Error('fn is null in applyFunction');
-  }
+  assertNonNullable(fn);
   if (!(fn instanceof InternalFunction)) {
     return createError('TypeError: ', `${fn.type} is not a function`);
   }
@@ -283,16 +282,14 @@ function extendFunctionEnvironment(
 }
 
 function unwrapReturnValue(obj: Maybe<InternalObject>): Maybe<InternalObject> {
-  if (obj instanceof InternalReturnValue) {
-    return obj.value;
-  }
-  return obj;
+  return obj instanceof InternalReturnValue ? obj.value : obj;
 }
 
 export default function evaluate(
   node: Maybe<ASTNode>,
   env: Environment
 ): Maybe<InternalObject> {
+  assertNonNullable(node);
   if (node instanceof Program) {
     return evaluateProgram(node, env);
   }
@@ -352,10 +349,11 @@ export default function evaluate(
     return evaluateIdentifier(node, env);
   }
   if (node instanceof FunctionLiteral) {
+    assertNonNullable(node.body);
+    assertNonNullable(node.parameters);
     if (node.body !== null && node.parameters !== null) {
       return new InternalFunction(env, node.body, node.parameters);
     }
-    throw new Error('Function body and parameters were null');
   }
   if (node instanceof CallExpression) {
     const fn = evaluate(node.fn, env);
@@ -370,8 +368,5 @@ export default function evaluate(
       return applyFunction(fn, args);
     }
   }
-  if (node === null) {
-    throw new Error('Was not expecting node to be null');
-  }
-  throw new Error(`Unhandled node type - ${node}`);
+  throw new Error(`Unhandled node type encountered while evaluating - ${node}`);
 }

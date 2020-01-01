@@ -22,6 +22,7 @@ import parseFunctionLiteral from './prefix/parse-function-literal';
 import parseCallExpression from './infix/parse-call-expression';
 
 import assertTokenType from '../utils/assert-token-type';
+import assertNonNullable from '../utils/assert-non-nullable';
 
 type PrefixParseFunction = () => Expression | null;
 type InfixParseFunction = (expr: Expression) => Expression | null;
@@ -99,11 +100,8 @@ export default class Parser {
 
     this.nextToken();
     this.nextToken();
-    if (this.currToken === null || this.peekToken === null) {
-      throw new Error(
-        `Parser's \`currToken\` and/or \`peekToken\` properties are null. This should never happen`
-      );
-    }
+    assertNonNullable(this.currToken);
+    assertNonNullable(this.peekToken);
   }
 
   public nextToken(): void {
