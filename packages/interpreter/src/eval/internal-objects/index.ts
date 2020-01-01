@@ -20,4 +20,5 @@ export const enum InternalObjectType {
   ERROR_OBJ = 'ERROR',
   FUNCTION_OBJ = 'FUNCTION',
   STRING_OBJ = 'STRING',
+  STDLIB_OBJ = 'STDLIB',
 }

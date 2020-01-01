@@ -11,3 +11,6 @@ export default class InternalBoolean implements InternalObject {
     return this.value.toString();
   }
 }
+
+export const INTERNAL_TRUE = new InternalBoolean(true);
+export const INTERNAL_FALSE = new InternalBoolean(false);

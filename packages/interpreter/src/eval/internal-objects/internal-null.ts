@@ -9,3 +9,5 @@ export default class InternalNull implements InternalObject {
     return 'null';
   }
 }
+
+export const INTERNAL_NULL = new InternalNull();
