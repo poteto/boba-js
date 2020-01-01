@@ -34,12 +34,16 @@ import {
   ArgumentError,
   isArgumentError,
 } from './internal-objects/internal-error';
+import { INTERNAL_NULL } from './internal-objects/internal-null';
+import {
+  INTERNAL_TRUE,
+  INTERNAL_FALSE,
+} from './internal-objects/internal-boolean';
 import assertNonNullable from '../utils/assert-non-nullable';
 import { TokenType } from '../token';
-
-const INTERNAL_NULL = new InternalNull();
-const INTERNAL_TRUE = new InternalBoolean(true);
-const INTERNAL_FALSE = new InternalBoolean(false);
+import hasOwnProperty from '../utils/has-own-property';
+import stdlib from './stdlib';
+import StandardLibraryObject from './internal-objects/standard-library-object';
 
 function lookupBooleanConstant(input: boolean): InternalBoolean {
   return input ? INTERNAL_TRUE : INTERNAL_FALSE;
@@ -229,6 +233,9 @@ function evaluateIdentifier(
   node: Identifier,
   env: Environment
 ): Maybe<InternalObject> {
+  if (hasOwnProperty(stdlib, node.value))  {
+    return stdlib[node.value];
+  }
   const value = env.get(node.value);
   if (value === null) {
     return createError('ReferenceError: ', `${node.value} is not defined`);
@@ -256,6 +263,9 @@ function applyFunction(
   args: Maybe<InternalObject>[]
 ): Maybe<InternalObject> {
   assertNonNullable(fn);
+  if (fn instanceof StandardLibraryObject) {
+    return fn.fn(...args);
+  }
   if (!(fn instanceof InternalFunction)) {
     return createError('TypeError: ', `${fn.type} is not a function`);
   }

@@ -199,6 +199,39 @@ describe('when evaluating string literal expressions', () => {
   });
 });
 
+describe('when evaluating stdlib:len', () => {
+  describe('when valid', () => {
+    test.each([
+      ['len("")', 0],
+      ['len("lauren")', 6],
+      ['len("hello world")', 11],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(evaluated).toBeInstanceOf(InternalInteger);
+      expect((evaluated as InternalInteger).value).toBe(expected);
+    });
+  });
+
+  describe('when invalid', () => {
+    test.each([
+      ['len(1)', 'TypeError: `len` expects a string, got INTEGER'],
+      ['len(1 + 2)', 'TypeError: `len` expects a string, got INTEGER'],
+      ['len(true)', 'TypeError: `len` expects a string, got BOOLEAN'],
+      ['len(fn(x) {})', 'TypeError: `len` expects a string, got FUNCTION'],
+      [
+        'len(if (true) { 1 })',
+        'TypeError: `len` expects a string, got INTEGER',
+      ],
+      ['len()', 'Wrong number of arguments. Expected 1, got 0'],
+      ['len("hello", "world")', 'Wrong number of arguments. Expected 1, got 2'],
+    ])('it evaluates and handles errors for: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(evaluated).toBeInstanceOf(InternalError);
+      expect((evaluated as InternalError).message).toBe(expected);
+    });
+  });
+});
+
 describe('when evaluating invalid programs', () => {
   test.each([
     ['5 + true;', 'TypeError: INTEGER + BOOLEAN'],
