@@ -56,7 +56,7 @@ export default class Lexer {
   }
 
   private readIdentifier(): string {
-    let position = this.position;
+    const position = this.position;
     while (isLetter(this.ch)) {
       this.readChar();
     }
@@ -64,8 +64,20 @@ export default class Lexer {
   }
 
   private readNumber(): string {
-    let position = this.position;
+    const position = this.position;
     while (isDigit(this.ch)) {
+      this.readChar();
+    }
+    return this.input.substring(position, this.position);
+  }
+
+  private readString(): string{
+    const position = this.position + 1;
+    this.readChar();
+    while (this.ch !== '"') {
+      if (this.ch === 0) {
+        break;
+      }
       this.readChar();
     }
     return this.input.substring(position, this.position);
@@ -136,6 +148,9 @@ export default class Lexer {
         break;
       case '}':
         token = createToken(TokenType.RBRACE, this.ch);
+        break;
+      case '"':
+        token = createToken(TokenType.STRING, this.readString());
         break;
       case 0:
         token = createToken(TokenType.EOF, '');

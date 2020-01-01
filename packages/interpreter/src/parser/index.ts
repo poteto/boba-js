@@ -23,6 +23,7 @@ import parseCallExpression from './infix/parse-call-expression';
 
 import assertTokenType from '../utils/assert-token-type';
 import assertNonNullable from '../utils/assert-non-nullable';
+import parseStringLiteral from './prefix/parse-string-literal';
 
 type PrefixParseFunction = () => Expression | null;
 type InfixParseFunction = (expr: Expression) => Expression | null;
@@ -87,6 +88,7 @@ export default class Parser {
     this.registerPrefix(TokenType.LPAREN, parseGroupedExpression.bind(this));
     this.registerPrefix(TokenType.IF, parseIfExpression.bind(this));
     this.registerPrefix(TokenType.FUNCTION, parseFunctionLiteral.bind(this));
+    this.registerPrefix(TokenType.STRING, parseStringLiteral.bind(this));
 
     this.registerInfix(TokenType.PLUS, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.MINUS, parseInfixExpression.bind(this));

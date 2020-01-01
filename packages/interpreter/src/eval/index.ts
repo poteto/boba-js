@@ -14,6 +14,7 @@ import {
   CallExpression,
   Expression,
   FunctionLiteral,
+  StringLiteral,
 } from '../ast';
 import {
   Environment,
@@ -26,6 +27,7 @@ import {
   InternalObjectType,
   createError,
   InternalFunction,
+  InternalString,
 } from './internal-objects';
 import { Maybe } from '../utils/maybe';
 import {
@@ -33,6 +35,7 @@ import {
   isArgumentError,
 } from './internal-objects/internal-error';
 import assertNonNullable from '../utils/assert-non-nullable';
+import { TokenType } from '../token';
 
 const INTERNAL_NULL = new InternalNull();
 const INTERNAL_TRUE = new InternalBoolean(true);
@@ -94,8 +97,7 @@ function evaluateBlockStatement(
 }
 
 function evaluateBangOperatorExpression(
-  right: Maybe<InternalObject>,
-  env: Environment
+  right: Maybe<InternalObject>
 ): InternalObject {
   switch (right) {
     case INTERNAL_FALSE:
@@ -108,8 +110,7 @@ function evaluateBangOperatorExpression(
 }
 
 function evaluateMinusPrefixOperatorExpression(
-  right: Maybe<InternalObject>,
-  env: Environment
+  right: Maybe<InternalObject>
 ): InternalObject {
   if (!(right instanceof InternalInteger)) {
     return createError('UnknownOperator: -', right?.type);
@@ -120,8 +121,7 @@ function evaluateMinusPrefixOperatorExpression(
 function evaluateIntegerInfixExpression(
   operator: string,
   left: Maybe<InternalInteger>,
-  right: Maybe<InternalInteger>,
-  env: Environment
+  right: Maybe<InternalInteger>
 ): InternalObject {
   assertNonNullable(left);
   assertNonNullable(right);
@@ -130,21 +130,21 @@ function evaluateIntegerInfixExpression(
   const rightValue = right.value;
 
   switch (operator) {
-    case '+':
+    case TokenType.PLUS:
       return new InternalInteger(leftValue + rightValue);
-    case '-':
+    case TokenType.MINUS:
       return new InternalInteger(leftValue - rightValue);
-    case '*':
+    case TokenType.ASTERISK:
       return new InternalInteger(leftValue * rightValue);
-    case '/':
+    case TokenType.SLASH:
       return new InternalInteger(leftValue / rightValue);
-    case '<':
+    case TokenType.LT:
       return lookupBooleanConstant(leftValue < rightValue);
-    case '>':
+    case TokenType.GT:
       return lookupBooleanConstant(leftValue > rightValue);
-    case '==':
+    case TokenType.EQ:
       return lookupBooleanConstant(leftValue === rightValue);
-    case '!=':
+    case TokenType.NOT_EQ:
       return lookupBooleanConstant(leftValue !== rightValue);
     default:
       return createError(
@@ -156,16 +156,30 @@ function evaluateIntegerInfixExpression(
   }
 }
 
+function evaluateStringInfixExpression(
+  operator: string,
+  left: Maybe<InternalString>,
+  right: Maybe<InternalString>
+): InternalObject {
+  assertNonNullable(left);
+  assertNonNullable(right);
+  if (operator === TokenType.PLUS) {
+    const leftValue = left.value;
+    const rightValue = right.value;
+    return new InternalString(leftValue + rightValue);
+  }
+  return createError('UnknownOperator: ', left?.type, operator, right?.type);
+}
+
 function evaluatePrefixExpression(
   operator: string,
-  right: Maybe<InternalObject>,
-  env: Environment
+  right: Maybe<InternalObject>
 ): InternalObject {
   switch (operator) {
-    case '!':
-      return evaluateBangOperatorExpression(right, env);
-    case '-':
-      return evaluateMinusPrefixOperatorExpression(right, env);
+    case TokenType.BANG:
+      return evaluateBangOperatorExpression(right);
+    case TokenType.MINUS:
+      return evaluateMinusPrefixOperatorExpression(right);
     default:
       return createError('UnknownOperator: ', operator, right?.type);
   }
@@ -174,16 +188,18 @@ function evaluatePrefixExpression(
 function evaluateInfixExpression(
   operator: string,
   left: Maybe<InternalObject>,
-  right: Maybe<InternalObject>,
-  env: Environment
+  right: Maybe<InternalObject>
 ): InternalObject {
   if (left instanceof InternalInteger && right instanceof InternalInteger) {
-    return evaluateIntegerInfixExpression(operator, left, right, env);
+    return evaluateIntegerInfixExpression(operator, left, right);
   }
-  if (operator === '==') {
+  if (left instanceof InternalString && right instanceof InternalString) {
+    return evaluateStringInfixExpression(operator, left, right);
+  }
+  if (operator === TokenType.EQ) {
     return lookupBooleanConstant(left === right);
   }
-  if (operator === '!=') {
+  if (operator === TokenType.NOT_EQ) {
     return lookupBooleanConstant(left !== right);
   }
   if (left?.type !== right?.type) {
@@ -299,6 +315,9 @@ export default function evaluate(
   if (node instanceof IntegerLiteral) {
     return new InternalInteger(node.value);
   }
+  if (node instanceof StringLiteral) {
+    return new InternalString(node.value);
+  }
   if (node instanceof BooleanLiteral) {
     return lookupBooleanConstant(node.value);
   }
@@ -307,7 +326,7 @@ export default function evaluate(
     if (isError(right)) {
       return right;
     }
-    return evaluatePrefixExpression(node.operator, right, env);
+    return evaluatePrefixExpression(node.operator, right);
   }
   if (node instanceof InfixExpression) {
     const left = evaluate(node.left, env);
@@ -318,7 +337,7 @@ export default function evaluate(
     if (isError(right)) {
       return right;
     }
-    return evaluateInfixExpression(node.operator, left, right, env);
+    return evaluateInfixExpression(node.operator, left, right);
   }
   if (node instanceof BlockStatement) {
     return evaluateBlockStatement(node, env);
