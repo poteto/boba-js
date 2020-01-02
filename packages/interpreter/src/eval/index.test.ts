@@ -255,6 +255,10 @@ describe('when evaluating stdlib:len', () => {
       ],
       ['len()', 'Wrong number of arguments. Expected 1, got 0'],
       ['len("hello", "world")', 'Wrong number of arguments. Expected 1, got 2'],
+      [
+        'len(["hello"], "world")',
+        'Wrong number of arguments. Expected 1, got 2',
+      ],
     ])('it evaluates and handles errors for: %p', (input, expected) => {
       const evaluated = testEval(input);
       expect(getValue(evaluated)).toBe(expected);
@@ -263,7 +267,7 @@ describe('when evaluating stdlib:len', () => {
 });
 
 describe('when evaluating stdlib:head', () => {
-  describe('when it returns a value', () => {
+  describe('when valid', () => {
     test.each([
       ['head([])', null],
       ['head([1, 2, 3])', 1],
@@ -275,19 +279,30 @@ describe('when evaluating stdlib:head', () => {
     });
   });
 
-  describe('when it does not return a value', () => {
-    test.each([['head()', 'Wrong number of arguments. Expected 1, got 0']])(
-      'it evaluates: %p',
-      (input, expected) => {
-        const evaluated = testEval(input);
-        expect(getValue(evaluated)).toBe(expected);
-      }
-    );
+  describe('when invalid', () => {
+    test.each([
+      ['head(1)', 'TypeError: `head` expects an array, got INTEGER'],
+      ['head(1 + 2)', 'TypeError: `head` expects an array, got INTEGER'],
+      ['head(true)', 'TypeError: `head` expects an array, got BOOLEAN'],
+      ['head(fn(x) {})', 'TypeError: `head` expects an array, got FUNCTION'],
+      [
+        'head(if (true) { 1 })',
+        'TypeError: `head` expects an array, got INTEGER',
+      ],
+      ['head()', 'Wrong number of arguments. Expected 1, got 0'],
+      [
+        'head(["hello"], "world")',
+        'Wrong number of arguments. Expected 1, got 2',
+      ],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
   });
 });
 
 describe('when evaluating stdlib:tail', () => {
-  describe('when it returns a value', () => {
+  describe('when valid', () => {
     test.each([
       ['tail([])', null],
       ['tail([1, 2, 3])', [2, 3]],
@@ -299,14 +314,25 @@ describe('when evaluating stdlib:tail', () => {
     });
   });
 
-  describe('when it does not return a value', () => {
-    test.each([['tail()', 'Wrong number of arguments. Expected 1, got 0']])(
-      'it evaluates: %p',
-      (input, errorMessage) => {
-        const evaluated = testEval(input);
-        expect(getValue(evaluated)).toEqual(errorMessage);
-      }
-    );
+  describe('when invalid', () => {
+    test.each([
+      ['tail(1)', 'TypeError: `tail` expects an array, got INTEGER'],
+      ['tail(1 + 2)', 'TypeError: `tail` expects an array, got INTEGER'],
+      ['tail(true)', 'TypeError: `tail` expects an array, got BOOLEAN'],
+      ['tail(fn(x) {})', 'TypeError: `tail` expects an array, got FUNCTION'],
+      [
+        'tail(if (true) { 1 })',
+        'TypeError: `tail` expects an array, got INTEGER',
+      ],
+      ['tail()', 'Wrong number of arguments. Expected 1, got 0'],
+      [
+        'tail(["hello"], "world")',
+        'Wrong number of arguments. Expected 1, got 2',
+      ],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
   });
 });
 
@@ -323,14 +349,78 @@ describe('when evaluating stdlib:last', () => {
     });
   });
 
-  describe('when it does not return a value', () => {
-    test.each([['last()', 'Wrong number of arguments. Expected 1, got 0']])(
+  describe('when invalid', () => {
+    test.each([
+      ['last(1)', 'TypeError: `last` expects an array, got INTEGER'],
+      ['last(1 + 2)', 'TypeError: `last` expects an array, got INTEGER'],
+      ['last(true)', 'TypeError: `last` expects an array, got BOOLEAN'],
+      ['last(fn(x) {})', 'TypeError: `last` expects an array, got FUNCTION'],
+      [
+        'last(if (true) { 1 })',
+        'TypeError: `last` expects an array, got INTEGER',
+      ],
+      ['last()', 'Wrong number of arguments. Expected 1, got 0'],
+      [
+        'last(["hello"], "world")',
+        'Wrong number of arguments. Expected 1, got 2',
+      ],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+});
+
+describe('when evaluating stdlib:push', () => {
+  describe('when it returns a value', () => {
+    test.each([
+      ['push([], 1)', 1],
+      ['push([1, 2, 3], 4)', [1, 2, 3, 4]],
+      ['push([false, true, true], false)', [false, true, true, false]],
+      ['push(["foo", "bar", "baz"], "qux")', ['foo', 'bar', 'baz', 'qux']],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toEqual(expected);
+    });
+  });
+
+  describe('when mutating arrays', () => {
+    test.each([['let a = []; let b = a; push(b, 1); [a, b];', [1, 1]]])(
       'it evaluates: %p',
-      (input, errorMessage) => {
+      (input, expected) => {
         const evaluated = testEval(input);
-        expect(getValue(evaluated)).toEqual(errorMessage);
+        expect(getValue(evaluated)).toEqual(expected);
       }
     );
+  });
+
+  describe('when invalid', () => {
+    test.each([
+      [
+        'push(1, 1)',
+        'TypeError: `push` expects an array and value, got INTEGER and INTEGER',
+      ],
+      [
+        'push(1 + 2, 2)',
+        'TypeError: `push` expects an array and value, got INTEGER and INTEGER',
+      ],
+      [
+        'push(true, false)',
+        'TypeError: `push` expects an array and value, got BOOLEAN and BOOLEAN',
+      ],
+      [
+        'push(fn(x) {}, if (true) { 1 })',
+        'TypeError: `push` expects an array and value, got FUNCTION and INTEGER',
+      ],
+      ['push()', 'Wrong number of arguments. Expected 2, got 0'],
+      [
+        'push([], "world", "peace")',
+        'Wrong number of arguments. Expected 2, got 3',
+      ],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
   });
 });
 

@@ -271,12 +271,12 @@ function applyFunction(
   if (fn instanceof StandardLibraryObject) {
     return fn.fn(...args);
   }
-  if (!(fn instanceof InternalFunction)) {
-    return createError('TypeError: ', `${fn.type} is not a function`);
+  if (fn instanceof InternalFunction) {
+    const extendedEnv = extendFunctionEnvironment(fn, args);
+    const evaluated = evaluate(fn.body, extendedEnv);
+    return unwrapReturnValue(evaluated);
   }
-  const extendedEnv = extendFunctionEnvironment(fn, args);
-  const evaluated = evaluate(fn.body, extendedEnv);
-  return unwrapReturnValue(evaluated);
+  return createError('TypeError: ', `${fn.type} is not a function`);
 }
 
 /**

@@ -1,14 +1,14 @@
-import StandardLibraryObject, {
-  StandardLibraryFunction,
-} from './internal-objects/standard-library-object';
 import {
   createError,
   InternalString,
   InternalInteger,
   InternalArray,
+  StandardLibraryObject,
 } from './internal-objects';
-import assertNonNullable from '../utils/assert-non-nullable';
 import { INTERNAL_NULL } from './internal-objects/internal-null';
+import { StandardLibraryFunction } from './internal-objects/standard-library-object';
+
+import assertNonNullable from '../utils/assert-non-nullable';
 
 const len: StandardLibraryFunction = function stdlib__len(...args) {
   if (args.length !== 1) {
@@ -75,7 +75,25 @@ const last: StandardLibraryFunction = function stdlib__last(...args) {
     }
     return INTERNAL_NULL;
   }
-  return createError(`TypeError: \`tail\` expects an array, got ${first.type}`);
+  return createError(`TypeError: \`last\` expects an array, got ${first.type}`);
+};
+
+const push: StandardLibraryFunction = function stdlib__push(...args) {
+  if (args.length !== 2) {
+    return createError(
+      `Wrong number of arguments. Expected 2, got ${args.length}`
+    );
+  }
+  const [first, last] = args;
+  assertNonNullable(first);
+  assertNonNullable(last);
+  if (first instanceof InternalArray && first.elements !== null) {
+    first.elements.push(last);
+    return first;
+  }
+  return createError(
+    `TypeError: \`push\` expects an array and value, got ${first.type} and ${last.type}`
+  );
 };
 
 export default {
@@ -83,4 +101,5 @@ export default {
   head: new StandardLibraryObject(head),
   tail: new StandardLibraryObject(tail),
   last: new StandardLibraryObject(last),
+  push: new StandardLibraryObject(push),
 };
