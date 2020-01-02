@@ -639,7 +639,7 @@ describe('when parsing call expressions', () => {
   );
 });
 
-describe.only('when parsing array expressions', () => {
+describe('when parsing array expressions', () => {
   describe('when parsing array literals', () => {
     test.each([
       ['[]', '[]'],

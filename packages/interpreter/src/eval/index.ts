@@ -395,6 +395,7 @@ export default function evaluate(
     if (value !== null) {
       return new InternalReturnValue(value);
     }
+    return createError(`Possible syntax error with ${node}`);
   }
   if (node instanceof LetStatement) {
     const value = evaluate(node.value, env);
@@ -415,6 +416,7 @@ export default function evaluate(
     if (node.body !== null && node.parameters !== null) {
       return new InternalFunction(env, node.body, node.parameters);
     }
+    return createError(`Possible syntax error with ${node}`);
   }
   if (node instanceof CallExpression) {
     const fn = evaluate(node.fn, env);
@@ -428,6 +430,7 @@ export default function evaluate(
       }
       return applyFunction(fn, args);
     }
+    return createError(`Possible syntax error with ${node}`);
   }
   if (node instanceof ArrayLiteral) {
     const elements = evaluateExpressions(node.elements, env);

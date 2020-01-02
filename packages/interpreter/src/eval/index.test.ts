@@ -14,6 +14,48 @@ import evaluate from '.';
 import { Maybe } from '../utils/maybe';
 import assertNonNullable from '../utils/assert-non-nullable';
 import { INTERNAL_NULL } from './internal-objects/internal-null';
+import {
+  INTERNAL_TRUE,
+  INTERNAL_FALSE,
+} from './internal-objects/internal-boolean';
+
+function getValue(obj: Maybe<InternalObject>): unknown | unknown[] {
+  const stack = [obj];
+  const results = [];
+  while (stack.length) {
+    const next = stack.pop();
+    if (next instanceof InternalArray) {
+      stack.push(...next.elements);
+      continue;
+    }
+    if (next === INTERNAL_NULL) {
+      results.unshift(null);
+      continue;
+    }
+    if (next === INTERNAL_TRUE) {
+      results.unshift(true);
+      continue;
+    }
+    if (next === INTERNAL_FALSE) {
+      results.unshift(false);
+      continue;
+    }
+    if (
+      next instanceof InternalBoolean ||
+      next instanceof InternalString ||
+      next instanceof InternalInteger
+    ) {
+      results.unshift(next.value);
+      continue;
+    }
+    if (next instanceof InternalError) {
+      results.unshift(next.message);
+      continue;
+    }
+    throw new Error(`I don't know how to get value for ${next}`);
+  }
+  return results.length > 1 ? results : results[0];
+}
 
 function testEval(input: string): Maybe<InternalObject> {
   const lexer = new Lexer(input);
@@ -208,6 +250,7 @@ describe('when evaluating stdlib:len', () => {
       ['len("")', 0],
       ['len("lauren")', 6],
       ['len("hello world")', 11],
+      ['len([1, 2, 3])', 3],
     ])('it evaluates: %p', (input, expected) => {
       const evaluated = testEval(input);
       expect(evaluated).toBeInstanceOf(InternalInteger);
@@ -232,6 +275,78 @@ describe('when evaluating stdlib:len', () => {
       expect(evaluated).toBeInstanceOf(InternalError);
       expect((evaluated as InternalError).message).toBe(expected);
     });
+  });
+});
+
+describe('when evaluating stdlib:head', () => {
+  describe('when it returns a value', () => {
+    test.each([
+      ['head([])', null],
+      ['head([1, 2, 3])', 1],
+      ['head([true, true, true])', true],
+      ['head(["foo", "bar", "baz"])', 'foo'],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+
+  describe('when it does not return a value', () => {
+    test.each([['head()', 'Wrong number of arguments. Expected 1, got 0']])(
+      'it evaluates: %p',
+      (input, errorMessage) => {
+        const evaluated = testEval(input);
+        expect((evaluated as InternalError).message).toBe(errorMessage);
+      }
+    );
+  });
+});
+
+describe('when evaluating stdlib:tail', () => {
+  describe('when it returns a value', () => {
+    test.each([
+      ['tail([])', null],
+      ['tail([1, 2, 3])', [2, 3]],
+      ['tail([false, true, true])', [true, true]],
+      ['tail(["foo", "bar", "baz"])', ['bar', 'baz']],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toEqual(expected);
+    });
+  });
+
+  describe('when it does not return a value', () => {
+    test.each([['tail()', 'Wrong number of arguments. Expected 1, got 0']])(
+      'it evaluates: %p',
+      (input, errorMessage) => {
+        const evaluated = testEval(input);
+        expect(getValue(evaluated)).toEqual(errorMessage);
+      }
+    );
+  });
+});
+
+describe('when evaluating stdlib:last', () => {
+  describe('when it returns a value', () => {
+    test.each([
+      ['last([])', null],
+      ['last([1, 2, 3])', 3],
+      ['last([false, true, true])', true],
+      ['last(["foo", "bar", "baz"])', 'baz'],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toEqual(expected);
+    });
+  });
+
+  describe('when it does not return a value', () => {
+    test.each([['last()', 'Wrong number of arguments. Expected 1, got 0']])(
+      'it evaluates: %p',
+      (input, errorMessage) => {
+        const evaluated = testEval(input);
+        expect(getValue(evaluated)).toEqual(errorMessage);
+      }
+    );
   });
 });
 
