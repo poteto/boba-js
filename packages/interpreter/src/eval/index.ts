@@ -1,3 +1,5 @@
+import { TokenType } from '../token';
+import stdlib from './stdlib';
 import {
   ASTNode,
   IntegerLiteral,
@@ -15,19 +17,22 @@ import {
   Expression,
   FunctionLiteral,
   StringLiteral,
+  ArrayLiteral,
+  IndexExpression,
 } from '../ast';
 import {
   Environment,
   InternalObject,
   InternalInteger,
   InternalBoolean,
-  InternalNull,
   InternalReturnValue,
   InternalError,
   InternalObjectType,
   createError,
   InternalFunction,
   InternalString,
+  InternalArray,
+  StandardLibraryObject,
 } from './internal-objects';
 import { Maybe } from '../utils/maybe';
 import {
@@ -39,11 +44,11 @@ import {
   INTERNAL_TRUE,
   INTERNAL_FALSE,
 } from './internal-objects/internal-boolean';
+
 import assertNonNullable from '../utils/assert-non-nullable';
-import { TokenType } from '../token';
 import hasOwnProperty from '../utils/has-own-property';
-import stdlib from './stdlib';
-import StandardLibraryObject from './internal-objects/standard-library-object';
+
+const MIN_ARRAY_INDEX = 0;
 
 function lookupBooleanConstant(input: boolean): InternalBoolean {
   return input ? INTERNAL_TRUE : INTERNAL_FALSE;
@@ -233,7 +238,7 @@ function evaluateIdentifier(
   node: Identifier,
   env: Environment
 ): Maybe<InternalObject> {
-  if (hasOwnProperty(stdlib, node.value))  {
+  if (hasOwnProperty(stdlib, node.value)) {
     return stdlib[node.value];
   }
   const value = env.get(node.value);
@@ -305,6 +310,33 @@ function extendFunctionEnvironment(
     inner.set(param.value, args[i]);
   }
   return inner;
+}
+
+function evaluateArrayIndexExpression(
+  left: InternalArray,
+  index: InternalInteger
+) {
+  const maxIndex = left.elements.length - 1;
+  if (index.value < MIN_ARRAY_INDEX || index.value > maxIndex) {
+    return INTERNAL_NULL;
+  }
+  return left.elements[index.value];
+}
+
+function evaluateIndexExpression(
+  left: Maybe<InternalObject>,
+  index: Maybe<InternalObject>
+): Maybe<InternalObject> {
+  if (!(left instanceof InternalArray)) {
+    return createError(
+      'TypeError: index operator not supported on ',
+      left?.type
+    );
+  }
+  if (!(index instanceof InternalInteger)) {
+    return createError('TypeError: index expression must be an integer');
+  }
+  return evaluateArrayIndexExpression(left, index);
 }
 
 function unwrapReturnValue(obj: Maybe<InternalObject>): Maybe<InternalObject> {
@@ -396,6 +428,24 @@ export default function evaluate(
       }
       return applyFunction(fn, args);
     }
+  }
+  if (node instanceof ArrayLiteral) {
+    const elements = evaluateExpressions(node.elements, env);
+    if (isArgumentError(elements)) {
+      return elements[0];
+    }
+    return new InternalArray(elements);
+  }
+  if (node instanceof IndexExpression) {
+    const left = evaluate(node.left, env);
+    if (isError(left)) {
+      return left;
+    }
+    const index = evaluate(node.index, env);
+    if (isError(index)) {
+      return index;
+    }
+    return evaluateIndexExpression(left, index);
   }
   throw new Error(`Unhandled node type encountered while evaluating - ${node}`);
 }

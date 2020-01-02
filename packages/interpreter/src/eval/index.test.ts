@@ -6,11 +6,14 @@ import {
   InternalNull,
   InternalError,
   InternalString,
+  InternalArray,
 } from './internal-objects';
 import Lexer from '../lexer';
 import Parser from '../parser';
 import evaluate from '.';
 import { Maybe } from '../utils/maybe';
+import assertNonNullable from '../utils/assert-non-nullable';
+import { INTERNAL_NULL } from './internal-objects/internal-null';
 
 function testEval(input: string): Maybe<InternalObject> {
   const lexer = new Lexer(input);
@@ -228,6 +231,56 @@ describe('when evaluating stdlib:len', () => {
       const evaluated = testEval(input);
       expect(evaluated).toBeInstanceOf(InternalError);
       expect((evaluated as InternalError).message).toBe(expected);
+    });
+  });
+});
+
+describe('when evaluating array expressions', () => {
+  describe('when evaluating array literals', () => {
+    test.each([
+      ['[1, 2 * 2, 3 / 3]', 3, ['1', '4', '1']],
+      [
+        '[true == true, if (true) { 1 }, fn(x) { x }(2)]',
+        3,
+        ['true', '1', '2'],
+      ],
+    ])('it evaluates: %p', (input, expectedLength, expectedValues) => {
+      const evaluated = testEval(input) as InternalArray;
+      expect(evaluated).toBeInstanceOf(InternalArray);
+      expect(evaluated.elements.length).toBe(expectedLength);
+      evaluated.elements.forEach((element, idx) => {
+        assertNonNullable(element);
+        expect(element.inspect()).toBe(expectedValues[idx]);
+      });
+    });
+  });
+
+  describe('when evaluating array index expressions', () => {
+    describe('when the index is in bounds', () => {
+      test.each([
+        ['[1, 2, 3][0]', 1],
+        ['[1, 2, 3][1]', 2],
+        ['[1, 2, 3][2]', 3],
+        ['let i = 0; [1, 2, 3][i]', 1],
+        ['[1, 2, 3][1 + 1]', 3],
+        ['let list = [1, 2, 3]; list[2]', 3],
+        ['let list = [1, 2, 3]; list[0] + list[1] + list[2]', 6],
+        ['let list = [1, 2, 3]; let i = list[0]; list[i]', 2],
+        ['let list = [fn(x) { x }(1)]; list[0]', 1],
+      ])('it evaluates: %p', (input, expected) => {
+        const evaluated = testEval(input) as InternalInteger;
+        expect(evaluated.value).toBe(expected);
+      });
+    });
+
+    describe('when the index is in bounds', () => {
+      test.each([['[1, 2, 3][3]'], ['[1, 2, 3][-1]']])(
+        'it evaluates: %p',
+        input => {
+          const evaluated = testEval(input) as InternalNull;
+          expect(evaluated).toBe(INTERNAL_NULL);
+        }
+      );
     });
   });
 });
