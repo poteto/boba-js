@@ -3,7 +3,6 @@ import {
   InternalObject,
   InternalInteger,
   InternalBoolean,
-  InternalNull,
   InternalError,
   InternalString,
   InternalArray,
@@ -12,7 +11,6 @@ import Lexer from '../lexer';
 import Parser from '../parser';
 import evaluate from '.';
 import { Maybe } from '../utils/maybe';
-import assertNonNullable from '../utils/assert-non-nullable';
 import { INTERNAL_NULL } from './internal-objects/internal-null';
 import {
   INTERNAL_TRUE,
@@ -83,8 +81,7 @@ describe('when evaluating integer expressions', () => {
     ['(5 + 10 * 2 + 15 / 3) * 2 + -10', 50],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalInteger);
-    expect((evaluated as InternalInteger).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -111,8 +108,7 @@ describe('when evaluating boolean expressions', () => {
     ['(1 > 2) == false', true],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalBoolean);
-    expect((evaluated as InternalBoolean).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -126,8 +122,7 @@ describe('when evaluating bang operators', () => {
     ['!!0', true],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalBoolean);
-    expect((evaluated as InternalBoolean).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -150,8 +145,7 @@ describe('when evaluating return statements', () => {
     ],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalInteger);
-    expect((evaluated as InternalInteger).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -163,8 +157,7 @@ describe('when evaluating let statements', () => {
     ['let a = 5; let b = a; let c = a + b + 5; c;', 15],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalInteger);
-    expect((evaluated as InternalInteger).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -196,8 +189,7 @@ describe('when evaluating call expressions', () => {
     ],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalInteger);
-    expect((evaluated as InternalInteger).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -212,11 +204,7 @@ describe('when evaluating if/else expressions', () => {
     ['if (1 < 2) { 10 } else { 20 }', 10],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    if (evaluated instanceof InternalInteger) {
-      expect((evaluated as InternalInteger).value).toBe(expected);
-      return;
-    }
-    expect(evaluated).toBeInstanceOf(InternalNull);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -227,8 +215,7 @@ describe('when evaluating string literal expressions', () => {
       ['"hello" + " " + "world!"', 'hello world!'],
     ])('it evaluates: %p', (input, expected) => {
       const evaluated = testEval(input);
-      expect(evaluated).toBeInstanceOf(InternalString);
-      expect((evaluated as InternalString).value).toBe(expected);
+      expect(getValue(evaluated)).toBe(expected);
     });
   });
 
@@ -237,8 +224,7 @@ describe('when evaluating string literal expressions', () => {
       'it evaluates: %p',
       (input, expected) => {
         const evaluated = testEval(input);
-        expect(evaluated).toBeInstanceOf(InternalError);
-        expect((evaluated as InternalError).message).toBe(expected);
+        expect(getValue(evaluated)).toBe(expected);
       }
     );
   });
@@ -253,8 +239,7 @@ describe('when evaluating stdlib:len', () => {
       ['len([1, 2, 3])', 3],
     ])('it evaluates: %p', (input, expected) => {
       const evaluated = testEval(input);
-      expect(evaluated).toBeInstanceOf(InternalInteger);
-      expect((evaluated as InternalInteger).value).toBe(expected);
+      expect(getValue(evaluated)).toBe(expected);
     });
   });
 
@@ -272,8 +257,7 @@ describe('when evaluating stdlib:len', () => {
       ['len("hello", "world")', 'Wrong number of arguments. Expected 1, got 2'],
     ])('it evaluates and handles errors for: %p', (input, expected) => {
       const evaluated = testEval(input);
-      expect(evaluated).toBeInstanceOf(InternalError);
-      expect((evaluated as InternalError).message).toBe(expected);
+      expect(getValue(evaluated)).toBe(expected);
     });
   });
 });
@@ -294,9 +278,9 @@ describe('when evaluating stdlib:head', () => {
   describe('when it does not return a value', () => {
     test.each([['head()', 'Wrong number of arguments. Expected 1, got 0']])(
       'it evaluates: %p',
-      (input, errorMessage) => {
+      (input, expected) => {
         const evaluated = testEval(input);
-        expect((evaluated as InternalError).message).toBe(errorMessage);
+        expect(getValue(evaluated)).toBe(expected);
       }
     );
   });
@@ -353,20 +337,13 @@ describe('when evaluating stdlib:last', () => {
 describe('when evaluating array expressions', () => {
   describe('when evaluating array literals', () => {
     test.each([
-      ['[1, 2 * 2, 3 / 3]', 3, ['1', '4', '1']],
-      [
-        '[true == true, if (true) { 1 }, fn(x) { x }(2)]',
-        3,
-        ['true', '1', '2'],
-      ],
+      ['[1, 2 * 2, 3 / 3]', 3, [1, 4, 1]],
+      ['[true == true, if (true) { 1 }, fn(x) { x }(2)]', 3, [true, 1, 2]],
     ])('it evaluates: %p', (input, expectedLength, expectedValues) => {
       const evaluated = testEval(input) as InternalArray;
       expect(evaluated).toBeInstanceOf(InternalArray);
       expect(evaluated.elements.length).toBe(expectedLength);
-      evaluated.elements.forEach((element, idx) => {
-        assertNonNullable(element);
-        expect(element.inspect()).toBe(expectedValues[idx]);
-      });
+      expect(getValue(evaluated)).toEqual(expectedValues);
     });
   });
 
@@ -383,19 +360,19 @@ describe('when evaluating array expressions', () => {
         ['let list = [1, 2, 3]; let i = list[0]; list[i]', 2],
         ['let list = [fn(x) { x }(1)]; list[0]', 1],
       ])('it evaluates: %p', (input, expected) => {
-        const evaluated = testEval(input) as InternalInteger;
-        expect(evaluated.value).toBe(expected);
+        const evaluated = testEval(input);
+        expect(getValue(evaluated)).toBe(expected);
       });
     });
 
-    describe('when the index is in bounds', () => {
-      test.each([['[1, 2, 3][3]'], ['[1, 2, 3][-1]']])(
-        'it evaluates: %p',
-        input => {
-          const evaluated = testEval(input) as InternalNull;
-          expect(evaluated).toBe(INTERNAL_NULL);
-        }
-      );
+    describe('when the index out of bounds', () => {
+      test.each([
+        ['[1, 2, 3][3]', null],
+        ['[1, 2, 3][-1]', null],
+      ])('it evaluates: %p', (input, expected) => {
+        const evaluated = testEval(input);
+        expect(getValue(evaluated)).toBe(expected);
+      });
     });
   });
 });
@@ -423,7 +400,6 @@ describe('when evaluating invalid programs', () => {
     ['foo', 'ReferenceError: foo is not defined'],
   ])('it evaluates and handles errors for: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalError);
-    expect((evaluated as InternalError).message).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
