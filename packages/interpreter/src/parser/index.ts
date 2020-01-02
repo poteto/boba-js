@@ -24,6 +24,9 @@ import parseCallExpression from './infix/parse-call-expression';
 import assertTokenType from '../utils/assert-token-type';
 import assertNonNullable from '../utils/assert-non-nullable';
 import parseStringLiteral from './prefix/parse-string-literal';
+import parseArrayLiteral from './prefix/parse-array-literal';
+import parseIndexExpression from './infix/parse-index-expression';
+import { Maybe } from '../utils/maybe';
 
 type PrefixParseFunction = () => Expression | null;
 type InfixParseFunction = (expr: Expression) => Expression | null;
@@ -44,7 +47,8 @@ type SupportedPrecedenceTokens =
   | TokenType.MINUS
   | TokenType.SLASH
   | TokenType.ASTERISK
-  | TokenType.LPAREN;
+  | TokenType.LPAREN
+  | TokenType.LBRACKET;
 type PrecedenceMap = {
   [key in SupportedPrecedenceTokens]: PrecedenceOrder;
 };
@@ -57,6 +61,7 @@ export const enum PrecedenceOrder {
   PRODUCT,
   PREFIX,
   CALL,
+  INDEX,
 }
 
 export default class Parser {
@@ -76,6 +81,7 @@ export default class Parser {
     [TokenType.SLASH]: PrecedenceOrder.PRODUCT,
     [TokenType.ASTERISK]: PrecedenceOrder.PRODUCT,
     [TokenType.LPAREN]: PrecedenceOrder.CALL,
+    [TokenType.LBRACKET]: PrecedenceOrder.INDEX,
   } as const;
 
   constructor(private lexer: Lexer) {
@@ -89,6 +95,7 @@ export default class Parser {
     this.registerPrefix(TokenType.IF, parseIfExpression.bind(this));
     this.registerPrefix(TokenType.FUNCTION, parseFunctionLiteral.bind(this));
     this.registerPrefix(TokenType.STRING, parseStringLiteral.bind(this));
+    this.registerPrefix(TokenType.LBRACKET, parseArrayLiteral.bind(this));
 
     this.registerInfix(TokenType.PLUS, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.MINUS, parseInfixExpression.bind(this));
@@ -99,6 +106,7 @@ export default class Parser {
     this.registerInfix(TokenType.LT, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.GT, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.LPAREN, parseCallExpression.bind(this));
+    this.registerInfix(TokenType.LBRACKET, parseIndexExpression.bind(this));
 
     this.nextToken();
     this.nextToken();
@@ -262,11 +270,13 @@ export default class Parser {
     return identifiers;
   }
 
-  public parseCallArguments(): Expression[] | null {
+  public parseExpressionList(
+    closingToken: TokenType.RPAREN | TokenType.RBRACKET
+  ): Maybe<Expression[]> {
     const args: Expression[] = [];
 
     // no args
-    if (this.peekTokenIs(TokenType.RPAREN)) {
+    if (this.peekTokenIs(closingToken)) {
       this.nextToken();
       return args;
     }
@@ -288,7 +298,7 @@ export default class Parser {
       }
     }
 
-    if (!this.expectPeek(TokenType.RPAREN)) {
+    if (!this.expectPeek(closingToken)) {
       return null;
     }
 

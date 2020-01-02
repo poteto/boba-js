@@ -93,8 +93,8 @@ export default class Lexer {
     let token: Token;
     this.skipWhitespace();
     switch (this.ch) {
-      case '=':
-        if (this.peekChar() === '=') {
+      case TokenType.ASSIGN:
+        if (this.peekChar() === TokenType.ASSIGN) {
           const ch = this.ch;
           this.readChar();
           const literal = ch + this.ch;
@@ -103,13 +103,13 @@ export default class Lexer {
         }
         token = createToken(TokenType.ASSIGN, this.ch);
         break;
-      case '+':
+      case TokenType.PLUS:
         token = createToken(TokenType.PLUS, this.ch);
         break;
-      case '-':
+      case TokenType.MINUS:
         token = createToken(TokenType.MINUS, this.ch);
         break;
-      case '!':
+      case TokenType.BANG:
         if (this.peekChar() === '=') {
           const ch = this.ch;
           this.readChar();
@@ -119,35 +119,41 @@ export default class Lexer {
         }
         token = createToken(TokenType.BANG, this.ch);
         break;
-      case '/':
+      case TokenType.SLASH:
         token = createToken(TokenType.SLASH, this.ch);
         break;
-      case '*':
+      case TokenType.ASTERISK:
         token = createToken(TokenType.ASTERISK, this.ch);
         break;
-      case '<':
+      case TokenType.LT:
         token = createToken(TokenType.LT, this.ch);
         break;
-      case '>':
+      case TokenType.GT:
         token = createToken(TokenType.GT, this.ch);
         break;
-      case ',':
+      case TokenType.COMMA:
         token = createToken(TokenType.COMMA, this.ch);
         break;
-      case ';':
+      case TokenType.SEMICOLON:
         token = createToken(TokenType.SEMICOLON, this.ch);
         break;
-      case '(':
+      case TokenType.LPAREN:
         token = createToken(TokenType.LPAREN, this.ch);
         break;
-      case ')':
+      case TokenType.RPAREN:
         token = createToken(TokenType.RPAREN, this.ch);
         break;
-      case '{':
+      case TokenType.LBRACE:
         token = createToken(TokenType.LBRACE, this.ch);
         break;
-      case '}':
+      case TokenType.RBRACE:
         token = createToken(TokenType.RBRACE, this.ch);
+        break;
+      case TokenType.LBRACKET:
+        token = createToken(TokenType.LBRACKET, this.ch);
+        break;
+      case TokenType.RBRACKET:
+        token = createToken(TokenType.RBRACKET, this.ch);
         break;
       case '"':
         token = createToken(TokenType.STRING, this.readString());

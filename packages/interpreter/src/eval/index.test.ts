@@ -3,14 +3,57 @@ import {
   InternalObject,
   InternalInteger,
   InternalBoolean,
-  InternalNull,
   InternalError,
   InternalString,
+  InternalArray,
 } from './internal-objects';
 import Lexer from '../lexer';
 import Parser from '../parser';
 import evaluate from '.';
 import { Maybe } from '../utils/maybe';
+import { INTERNAL_NULL } from './internal-objects/internal-null';
+import {
+  INTERNAL_TRUE,
+  INTERNAL_FALSE,
+} from './internal-objects/internal-boolean';
+
+function getValue(obj: Maybe<InternalObject>): unknown | unknown[] {
+  const stack = [obj];
+  const results = [];
+  while (stack.length) {
+    const next = stack.pop();
+    if (next instanceof InternalArray) {
+      stack.push(...next.elements);
+      continue;
+    }
+    if (next === INTERNAL_NULL) {
+      results.unshift(null);
+      continue;
+    }
+    if (next === INTERNAL_TRUE) {
+      results.unshift(true);
+      continue;
+    }
+    if (next === INTERNAL_FALSE) {
+      results.unshift(false);
+      continue;
+    }
+    if (
+      next instanceof InternalBoolean ||
+      next instanceof InternalString ||
+      next instanceof InternalInteger
+    ) {
+      results.unshift(next.value);
+      continue;
+    }
+    if (next instanceof InternalError) {
+      results.unshift(next.message);
+      continue;
+    }
+    throw new Error(`I don't know how to get value for ${next}`);
+  }
+  return results.length > 1 ? results : results[0];
+}
 
 function testEval(input: string): Maybe<InternalObject> {
   const lexer = new Lexer(input);
@@ -38,8 +81,7 @@ describe('when evaluating integer expressions', () => {
     ['(5 + 10 * 2 + 15 / 3) * 2 + -10', 50],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalInteger);
-    expect((evaluated as InternalInteger).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -66,8 +108,7 @@ describe('when evaluating boolean expressions', () => {
     ['(1 > 2) == false', true],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalBoolean);
-    expect((evaluated as InternalBoolean).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -81,8 +122,7 @@ describe('when evaluating bang operators', () => {
     ['!!0', true],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalBoolean);
-    expect((evaluated as InternalBoolean).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -105,8 +145,7 @@ describe('when evaluating return statements', () => {
     ],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalInteger);
-    expect((evaluated as InternalInteger).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -118,8 +157,7 @@ describe('when evaluating let statements', () => {
     ['let a = 5; let b = a; let c = a + b + 5; c;', 15],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalInteger);
-    expect((evaluated as InternalInteger).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -151,8 +189,7 @@ describe('when evaluating call expressions', () => {
     ],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalInteger);
-    expect((evaluated as InternalInteger).value).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -167,11 +204,7 @@ describe('when evaluating if/else expressions', () => {
     ['if (1 < 2) { 10 } else { 20 }', 10],
   ])('it evaluates: %p', (input, expected) => {
     const evaluated = testEval(input);
-    if (evaluated instanceof InternalInteger) {
-      expect((evaluated as InternalInteger).value).toBe(expected);
-      return;
-    }
-    expect(evaluated).toBeInstanceOf(InternalNull);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });
 
@@ -182,8 +215,7 @@ describe('when evaluating string literal expressions', () => {
       ['"hello" + " " + "world!"', 'hello world!'],
     ])('it evaluates: %p', (input, expected) => {
       const evaluated = testEval(input);
-      expect(evaluated).toBeInstanceOf(InternalString);
-      expect((evaluated as InternalString).value).toBe(expected);
+      expect(getValue(evaluated)).toBe(expected);
     });
   });
 
@@ -192,8 +224,7 @@ describe('when evaluating string literal expressions', () => {
       'it evaluates: %p',
       (input, expected) => {
         const evaluated = testEval(input);
-        expect(evaluated).toBeInstanceOf(InternalError);
-        expect((evaluated as InternalError).message).toBe(expected);
+        expect(getValue(evaluated)).toBe(expected);
       }
     );
   });
@@ -205,10 +236,10 @@ describe('when evaluating stdlib:len', () => {
       ['len("")', 0],
       ['len("lauren")', 6],
       ['len("hello world")', 11],
+      ['len([1, 2, 3])', 3],
     ])('it evaluates: %p', (input, expected) => {
       const evaluated = testEval(input);
-      expect(evaluated).toBeInstanceOf(InternalInteger);
-      expect((evaluated as InternalInteger).value).toBe(expected);
+      expect(getValue(evaluated)).toBe(expected);
     });
   });
 
@@ -224,10 +255,214 @@ describe('when evaluating stdlib:len', () => {
       ],
       ['len()', 'Wrong number of arguments. Expected 1, got 0'],
       ['len("hello", "world")', 'Wrong number of arguments. Expected 1, got 2'],
+      [
+        'len(["hello"], "world")',
+        'Wrong number of arguments. Expected 1, got 2',
+      ],
     ])('it evaluates and handles errors for: %p', (input, expected) => {
       const evaluated = testEval(input);
-      expect(evaluated).toBeInstanceOf(InternalError);
-      expect((evaluated as InternalError).message).toBe(expected);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+});
+
+describe('when evaluating stdlib:head', () => {
+  describe('when valid', () => {
+    test.each([
+      ['head([])', null],
+      ['head([1, 2, 3])', 1],
+      ['head([true, true, true])', true],
+      ['head(["foo", "bar", "baz"])', 'foo'],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+
+  describe('when invalid', () => {
+    test.each([
+      ['head(1)', 'TypeError: `head` expects an array, got INTEGER'],
+      ['head(1 + 2)', 'TypeError: `head` expects an array, got INTEGER'],
+      ['head(true)', 'TypeError: `head` expects an array, got BOOLEAN'],
+      ['head(fn(x) {})', 'TypeError: `head` expects an array, got FUNCTION'],
+      [
+        'head(if (true) { 1 })',
+        'TypeError: `head` expects an array, got INTEGER',
+      ],
+      ['head()', 'Wrong number of arguments. Expected 1, got 0'],
+      [
+        'head(["hello"], "world")',
+        'Wrong number of arguments. Expected 1, got 2',
+      ],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+});
+
+describe('when evaluating stdlib:tail', () => {
+  describe('when valid', () => {
+    test.each([
+      ['tail([])', null],
+      ['tail([1, 2, 3])', [2, 3]],
+      ['tail([false, true, true])', [true, true]],
+      ['tail(["foo", "bar", "baz"])', ['bar', 'baz']],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toEqual(expected);
+    });
+  });
+
+  describe('when invalid', () => {
+    test.each([
+      ['tail(1)', 'TypeError: `tail` expects an array, got INTEGER'],
+      ['tail(1 + 2)', 'TypeError: `tail` expects an array, got INTEGER'],
+      ['tail(true)', 'TypeError: `tail` expects an array, got BOOLEAN'],
+      ['tail(fn(x) {})', 'TypeError: `tail` expects an array, got FUNCTION'],
+      [
+        'tail(if (true) { 1 })',
+        'TypeError: `tail` expects an array, got INTEGER',
+      ],
+      ['tail()', 'Wrong number of arguments. Expected 1, got 0'],
+      [
+        'tail(["hello"], "world")',
+        'Wrong number of arguments. Expected 1, got 2',
+      ],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+});
+
+describe('when evaluating stdlib:last', () => {
+  describe('when it returns a value', () => {
+    test.each([
+      ['last([])', null],
+      ['last([1, 2, 3])', 3],
+      ['last([false, true, true])', true],
+      ['last(["foo", "bar", "baz"])', 'baz'],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toEqual(expected);
+    });
+  });
+
+  describe('when invalid', () => {
+    test.each([
+      ['last(1)', 'TypeError: `last` expects an array, got INTEGER'],
+      ['last(1 + 2)', 'TypeError: `last` expects an array, got INTEGER'],
+      ['last(true)', 'TypeError: `last` expects an array, got BOOLEAN'],
+      ['last(fn(x) {})', 'TypeError: `last` expects an array, got FUNCTION'],
+      [
+        'last(if (true) { 1 })',
+        'TypeError: `last` expects an array, got INTEGER',
+      ],
+      ['last()', 'Wrong number of arguments. Expected 1, got 0'],
+      [
+        'last(["hello"], "world")',
+        'Wrong number of arguments. Expected 1, got 2',
+      ],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+});
+
+describe('when evaluating stdlib:push', () => {
+  describe('when it returns a value', () => {
+    test.each([
+      ['push([], 1)', 1],
+      ['push([1, 2, 3], 4)', [1, 2, 3, 4]],
+      ['push([false, true, true], false)', [false, true, true, false]],
+      ['push(["foo", "bar", "baz"], "qux")', ['foo', 'bar', 'baz', 'qux']],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toEqual(expected);
+    });
+  });
+
+  describe('when mutating arrays', () => {
+    test.each([['let a = []; let b = a; push(b, 1); [a, b];', [1, 1]]])(
+      'it evaluates: %p',
+      (input, expected) => {
+        const evaluated = testEval(input);
+        expect(getValue(evaluated)).toEqual(expected);
+      }
+    );
+  });
+
+  describe('when invalid', () => {
+    test.each([
+      [
+        'push(1, 1)',
+        'TypeError: `push` expects an array and value, got INTEGER and INTEGER',
+      ],
+      [
+        'push(1 + 2, 2)',
+        'TypeError: `push` expects an array and value, got INTEGER and INTEGER',
+      ],
+      [
+        'push(true, false)',
+        'TypeError: `push` expects an array and value, got BOOLEAN and BOOLEAN',
+      ],
+      [
+        'push(fn(x) {}, if (true) { 1 })',
+        'TypeError: `push` expects an array and value, got FUNCTION and INTEGER',
+      ],
+      ['push()', 'Wrong number of arguments. Expected 2, got 0'],
+      [
+        'push([], "world", "peace")',
+        'Wrong number of arguments. Expected 2, got 3',
+      ],
+    ])('it evaluates: %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+});
+
+describe('when evaluating array expressions', () => {
+  describe('when evaluating array literals', () => {
+    test.each([
+      ['[1, 2 * 2, 3 / 3]', 3, [1, 4, 1]],
+      ['[true == true, if (true) { 1 }, fn(x) { x }(2)]', 3, [true, 1, 2]],
+    ])('it evaluates: %p', (input, expectedLength, expectedValues) => {
+      const evaluated = testEval(input) as InternalArray;
+      expect(evaluated).toBeInstanceOf(InternalArray);
+      expect(evaluated.elements.length).toBe(expectedLength);
+      expect(getValue(evaluated)).toEqual(expectedValues);
+    });
+  });
+
+  describe('when evaluating array index expressions', () => {
+    describe('when the index is in bounds', () => {
+      test.each([
+        ['[1, 2, 3][0]', 1],
+        ['[1, 2, 3][1]', 2],
+        ['[1, 2, 3][2]', 3],
+        ['let i = 0; [1, 2, 3][i]', 1],
+        ['[1, 2, 3][1 + 1]', 3],
+        ['let list = [1, 2, 3]; list[2]', 3],
+        ['let list = [1, 2, 3]; list[0] + list[1] + list[2]', 6],
+        ['let list = [1, 2, 3]; let i = list[0]; list[i]', 2],
+        ['let list = [fn(x) { x }(1)]; list[0]', 1],
+      ])('it evaluates: %p', (input, expected) => {
+        const evaluated = testEval(input);
+        expect(getValue(evaluated)).toBe(expected);
+      });
+    });
+
+    describe('when the index out of bounds', () => {
+      test.each([
+        ['[1, 2, 3][3]', null],
+        ['[1, 2, 3][-1]', null],
+      ])('it evaluates: %p', (input, expected) => {
+        const evaluated = testEval(input);
+        expect(getValue(evaluated)).toBe(expected);
+      });
     });
   });
 });
@@ -255,7 +490,6 @@ describe('when evaluating invalid programs', () => {
     ['foo', 'ReferenceError: foo is not defined'],
   ])('it evaluates and handles errors for: %p', (input, expected) => {
     const evaluated = testEval(input);
-    expect(evaluated).toBeInstanceOf(InternalError);
-    expect((evaluated as InternalError).message).toBe(expected);
+    expect(getValue(evaluated)).toBe(expected);
   });
 });

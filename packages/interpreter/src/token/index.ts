@@ -32,6 +32,8 @@ export const enum TokenType {
   RPAREN = ')',
   LBRACE = '{',
   RBRACE = '}',
+  LBRACKET = '[',
+  RBRACKET = ']',
 
   // Keywords
   FUNCTION = 'FUNCTION',
@@ -67,6 +69,10 @@ export type ReturnStatementToken = {
 export type IfExpressionToken = { type: TokenType.IF; literal: LiteralType };
 export type LeftParenToken = { type: TokenType.LPAREN; literal: LiteralType };
 export type LeftBraceToken = { type: TokenType.LBRACE; literal: LiteralType };
+export type LeftBracketToken = {
+  type: TokenType.LBRACKET;
+  literal: LiteralType;
+};
 export type FunctionLiteralToken = {
   type: TokenType.FUNCTION;
   literal: LiteralType;

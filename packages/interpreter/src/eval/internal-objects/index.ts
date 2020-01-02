@@ -1,4 +1,5 @@
 export { default as Environment } from './environment';
+export { default as InternalArray } from './internal-array';
 export { default as InternalBoolean } from './internal-boolean';
 export { createError, default as InternalError } from './internal-error';
 export { default as InternalFunction } from './internal-function';
@@ -6,6 +7,7 @@ export { default as InternalInteger } from './internal-integer';
 export { default as InternalNull } from './internal-null';
 export { default as InternalString } from './internal-string';
 export { default as InternalReturnValue } from './internal-return-value';
+export { default as StandardLibraryObject } from './standard-library-object';
 
 export interface InternalObject {
   type: InternalObjectType;
@@ -21,4 +23,5 @@ export const enum InternalObjectType {
   FUNCTION_OBJ = 'FUNCTION',
   STRING_OBJ = 'STRING',
   STDLIB_OBJ = 'STDLIB',
+  ARRAY_OBJ = 'ARRAY',
 }

@@ -3,7 +3,7 @@ import { Maybe } from '../../utils/maybe';
 
 export type StandardLibraryFunction = (
   ...args: Maybe<InternalObject>[]
-) => InternalObject;
+) => Maybe<InternalObject>;
 
 export default class StandardLibraryObject implements InternalObject {
   constructor(public fn: StandardLibraryFunction) {}
