@@ -158,6 +158,9 @@ export default class Lexer {
       case '"':
         token = createToken(TokenType.STRING, this.readString());
         break;
+      case TokenType.COLON:
+        token = createToken(TokenType.COLON, this.ch);
+        break;
       case 0:
         token = createToken(TokenType.EOF, '');
         break;

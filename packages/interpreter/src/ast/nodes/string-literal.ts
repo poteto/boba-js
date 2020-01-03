@@ -9,6 +9,6 @@ export default class StringLiteral implements Expression {
     return this.token.literal;
   }
   toString() {
-    return this.token.literal;
+    return `"${this.token.literal}"`;
   }
 }
