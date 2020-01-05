@@ -256,8 +256,8 @@ function evaluateExpressions(
   exprs: Expression[],
   env: Environment
 ): ArgumentError | Maybe<InternalObject>[] {
-  let results: Maybe<InternalObject>[] = [];
-  for (let expr of exprs) {
+  const results: Maybe<InternalObject>[] = [];
+  for (const expr of exprs) {
     const evaluated = evaluate(expr, env);
     if (isError(evaluated)) {
       return [evaluated];

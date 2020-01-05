@@ -28,6 +28,7 @@ import parseArrayLiteral from './prefix/parse-array-literal';
 import parseIndexExpression from './infix/parse-index-expression';
 import { Maybe } from '../utils/maybe';
 import parseHashLiteral from './prefix/parse-hash-literal';
+import hasOwnProperty from '../utils/has-own-property';
 
 type PrefixParseFunction = () => Expression | null;
 type InfixParseFunction = (expr: Expression) => Expression | null;
@@ -294,7 +295,7 @@ export default class Parser {
     while (this.peekTokenIs(TokenType.COMMA)) {
       this.nextToken();
       this.nextToken();
-      let arg = this.parseExpression(PrecedenceOrder.LOWEST);
+      const arg = this.parseExpression(PrecedenceOrder.LOWEST);
       if (arg) {
         args.push(arg);
       }
@@ -324,7 +325,7 @@ export default class Parser {
   public hasPrecedence(
     tokenType: TokenType
   ): tokenType is SupportedPrecedenceTokens {
-    return this.precedences.hasOwnProperty(tokenType);
+    return hasOwnProperty(this.precedences, tokenType);
   }
 
   public peekTokenIs(tokenType: TokenType): boolean {

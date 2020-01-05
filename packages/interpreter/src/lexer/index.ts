@@ -24,8 +24,8 @@ function isDigit<T extends number | string>(ch: T) {
 }
 
 export default class Lexer {
-  private position: number = 0; // current position in input (points to current char)
-  private readPosition: number = 0; // current reading position in input (after current char)
+  private position = 0; // current position in input (points to current char)
+  private readPosition = 0; // current reading position in input (after current char)
   private ch: Char = ''; // current char under examination
 
   constructor(public input: string) {
@@ -71,7 +71,7 @@ export default class Lexer {
     return this.input.substring(position, this.position);
   }
 
-  private readString(): string{
+  private readString(): string {
     const position = this.position + 1;
     this.readChar();
     while (this.ch !== '"') {

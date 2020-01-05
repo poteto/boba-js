@@ -4,7 +4,7 @@ declare module 'fnv-plus' {
     dec(): string;
     hex(): string;
     str(): string;
-  }
+  };
 
   export function fast1a32(str: string): string;
 
