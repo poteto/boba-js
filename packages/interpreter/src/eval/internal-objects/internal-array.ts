@@ -10,7 +10,7 @@ export default class InternalArray implements InternalObject {
 
   inspect() {
     const elements = this.elements
-      .map(element => element?.toString())
+      .map(element => element?.inspect())
       .join(', ');
     return `[${elements}]`;
   }

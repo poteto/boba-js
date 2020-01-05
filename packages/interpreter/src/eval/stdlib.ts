@@ -96,10 +96,20 @@ const push: StandardLibraryFunction = function stdlib__push(...args) {
   );
 };
 
+const puts: StandardLibraryFunction = function stdlib__puts(...args) {
+  for (const arg of args) {
+    if (arg !== null) {
+      console.log(arg.inspect());
+    }
+  }
+  return INTERNAL_NULL;
+};
+
 export default {
   len: new StandardLibraryObject(len),
   head: new StandardLibraryObject(head),
   tail: new StandardLibraryObject(tail),
   last: new StandardLibraryObject(last),
   push: new StandardLibraryObject(push),
+  puts: new StandardLibraryObject(puts),
 };

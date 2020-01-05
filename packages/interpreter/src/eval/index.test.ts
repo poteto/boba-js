@@ -430,6 +430,16 @@ describe('when evaluating stdlib:push', () => {
   });
 });
 
+describe('when evaluating stdlib:puts', () => {
+  test.each([['puts(["foo", "bar"], 1, true, fn(x) { x })', null]])(
+    'it logs: %p',
+    (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toEqual(expected);
+    }
+  );
+});
+
 describe('when evaluating array expressions', () => {
   describe('when evaluating array literals', () => {
     test.each([
