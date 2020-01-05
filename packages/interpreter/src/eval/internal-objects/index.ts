@@ -9,9 +9,16 @@ export { default as InternalString } from './internal-string';
 export { default as InternalReturnValue } from './internal-return-value';
 export { default as StandardLibraryObject } from './standard-library-object';
 
+export type HashKey = string;
+
 export interface InternalObject {
   type: InternalObjectType;
   inspect(): string;
+  toHashKey?(): HashKey;
+}
+
+export interface HashableInternalObject extends InternalObject {
+  toHashKey(): HashKey;
 }
 
 export const enum InternalObjectType {
@@ -24,4 +31,5 @@ export const enum InternalObjectType {
   STRING_OBJ = 'STRING',
   STDLIB_OBJ = 'STDLIB',
   ARRAY_OBJ = 'ARRAY',
+  HASH_OBJ = 'HASH',
 }

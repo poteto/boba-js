@@ -1,6 +1,6 @@
-import { InternalObject, InternalObjectType } from '.';
+import { HashableInternalObject, InternalObjectType } from '.';
 
-export default class InternalInteger implements InternalObject {
+export default class InternalInteger implements HashableInternalObject {
   constructor(public value: number) {}
 
   get type() {
@@ -9,5 +9,9 @@ export default class InternalInteger implements InternalObject {
 
   inspect() {
     return this.value.toString();
+  }
+
+  toHashKey() {
+    return `${this.type}@${this.value}`;
   }
 }
