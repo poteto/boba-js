@@ -27,6 +27,7 @@ import parseStringLiteral from './prefix/parse-string-literal';
 import parseArrayLiteral from './prefix/parse-array-literal';
 import parseIndexExpression from './infix/parse-index-expression';
 import { Maybe } from '../utils/maybe';
+import parseHashLiteral from './prefix/parse-hash-literal';
 
 type PrefixParseFunction = () => Expression | null;
 type InfixParseFunction = (expr: Expression) => Expression | null;
@@ -96,6 +97,7 @@ export default class Parser {
     this.registerPrefix(TokenType.FUNCTION, parseFunctionLiteral.bind(this));
     this.registerPrefix(TokenType.STRING, parseStringLiteral.bind(this));
     this.registerPrefix(TokenType.LBRACKET, parseArrayLiteral.bind(this));
+    this.registerPrefix(TokenType.LBRACE, parseHashLiteral.bind(this));
 
     this.registerInfix(TokenType.PLUS, parseInfixExpression.bind(this));
     this.registerInfix(TokenType.MINUS, parseInfixExpression.bind(this));

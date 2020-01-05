@@ -1,6 +1,7 @@
-import { InternalObject, InternalObjectType } from '.';
+import { HashableInternalObject, InternalObjectType } from '.';
+import fnv from 'fnv-plus';
 
-export default class InternalString implements InternalObject {
+export default class InternalString implements HashableInternalObject {
   constructor(public value: string) {}
 
   get type() {
@@ -9,5 +10,9 @@ export default class InternalString implements InternalObject {
 
   inspect() {
     return this.value.toString();
+  }
+
+  toHashKey() {
+    return `${this.type}@${fnv.fast1a64(this.value)}`;
   }
 }

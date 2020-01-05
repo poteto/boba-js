@@ -3,15 +3,23 @@ export { default as InternalArray } from './internal-array';
 export { default as InternalBoolean } from './internal-boolean';
 export { createError, default as InternalError } from './internal-error';
 export { default as InternalFunction } from './internal-function';
+export { default as InternalHash } from './internal-hash';
 export { default as InternalInteger } from './internal-integer';
 export { default as InternalNull } from './internal-null';
 export { default as InternalString } from './internal-string';
 export { default as InternalReturnValue } from './internal-return-value';
 export { default as StandardLibraryObject } from './standard-library-object';
 
+export type HashKey = string;
+
 export interface InternalObject {
   type: InternalObjectType;
   inspect(): string;
+  toHashKey?(): HashKey;
+}
+
+export interface HashableInternalObject extends InternalObject {
+  toHashKey(): HashKey;
 }
 
 export const enum InternalObjectType {
@@ -24,4 +32,5 @@ export const enum InternalObjectType {
   STRING_OBJ = 'STRING',
   STDLIB_OBJ = 'STDLIB',
   ARRAY_OBJ = 'ARRAY',
+  HASH_OBJ = 'HASH',
 }

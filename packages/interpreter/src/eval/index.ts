@@ -1,40 +1,42 @@
 import { TokenType } from '../token';
 import stdlib from './stdlib';
 import {
+  ArrayLiteral,
   ASTNode,
-  IntegerLiteral,
-  Program,
-  ExpressionStatement,
-  BooleanLiteral,
-  PrefixExpression,
-  InfixExpression,
-  IfExpression,
   BlockStatement,
-  ReturnStatement,
-  LetStatement,
-  Identifier,
+  BooleanLiteral,
   CallExpression,
   Expression,
+  ExpressionStatement,
   FunctionLiteral,
-  StringLiteral,
-  ArrayLiteral,
+  HashLiteral,
+  Identifier,
+  IfExpression,
   IndexExpression,
+  InfixExpression,
+  IntegerLiteral,
+  LetStatement,
+  PrefixExpression,
+  Program,
+  ReturnStatement,
+  StringLiteral,
 } from '../ast';
 import {
-  Environment,
-  InternalObject,
-  InternalInteger,
-  InternalBoolean,
-  InternalReturnValue,
-  InternalError,
-  InternalObjectType,
   createError,
-  InternalFunction,
-  InternalString,
+  Environment,
+  HashableInternalObject,
   InternalArray,
+  InternalBoolean,
+  InternalError,
+  InternalFunction,
+  InternalHash,
+  InternalInteger,
+  InternalObject,
+  InternalObjectType,
+  InternalReturnValue,
+  InternalString,
   StandardLibraryObject,
 } from './internal-objects';
-import { Maybe } from '../utils/maybe';
 import {
   ArgumentError,
   isArgumentError,
@@ -47,6 +49,8 @@ import {
 
 import assertNonNullable from '../utils/assert-non-nullable';
 import hasOwnProperty from '../utils/has-own-property';
+import { Maybe } from '../utils/maybe';
+import isHashableInternalObject from '../utils/is-hashable-internal-object';
 
 const MIN_ARRAY_INDEX = 0;
 
@@ -323,24 +327,64 @@ function evaluateArrayIndexExpression(
   return left.elements[index.value];
 }
 
+function evaluateHashIndexExpression(
+  left: InternalHash,
+  index: HashableInternalObject
+): InternalObject {
+  const hashKey = index.toHashKey();
+  if (hasOwnProperty(left.pairs, hashKey)) {
+    return left.pairs[hashKey];
+  }
+  return INTERNAL_NULL;
+}
+
 function evaluateIndexExpression(
   left: Maybe<InternalObject>,
   index: Maybe<InternalObject>
 ): Maybe<InternalObject> {
-  if (!(left instanceof InternalArray)) {
-    return createError(
-      'TypeError: index operator not supported on ',
-      left?.type
-    );
+  if (left instanceof InternalArray) {
+    if (!(index instanceof InternalInteger)) {
+      return createError('TypeError: index expression must be an integer');
+    }
+    return evaluateArrayIndexExpression(left, index);
   }
-  if (!(index instanceof InternalInteger)) {
-    return createError('TypeError: index expression must be an integer');
+  if (left instanceof InternalHash) {
+    assertNonNullable(index);
+    if (!isHashableInternalObject(index)) {
+      return createError(
+        'TypeError: index expression must be an integer, string, or boolean'
+      );
+    }
+    return evaluateHashIndexExpression(left, index);
   }
-  return evaluateArrayIndexExpression(left, index);
+  return createError('TypeError: index operator not supported on ', left?.type);
 }
 
 function unwrapReturnValue(obj: Maybe<InternalObject>): Maybe<InternalObject> {
   return obj instanceof InternalReturnValue ? obj.value : obj;
+}
+
+function evaluateHashLiteral(
+  node: HashLiteral,
+  env: Environment
+): InternalObject {
+  const pairs = Object.create(null);
+  for (const [keyExpr, valueExpr] of node.pairs.entries()) {
+    const key = evaluate(keyExpr, env);
+    if (isError(key)) {
+      return key;
+    }
+    assertNonNullable(key);
+    if (!isHashableInternalObject(key)) {
+      return createError('Unusable as hash key: ', key.type);
+    }
+    const value = evaluate(valueExpr, env);
+    if (isError(value)) {
+      return value;
+    }
+    pairs[key.toHashKey()] = value;
+  }
+  return new InternalHash(pairs);
 }
 
 export default function evaluate(
@@ -449,6 +493,9 @@ export default function evaluate(
       return index;
     }
     return evaluateIndexExpression(left, index);
+  }
+  if (node instanceof HashLiteral) {
+    return evaluateHashLiteral(node, env);
   }
   throw new Error(`Unhandled node type encountered while evaluating - ${node}`);
 }

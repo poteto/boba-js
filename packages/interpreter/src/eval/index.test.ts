@@ -1,3 +1,6 @@
+import Lexer from '../lexer';
+import Parser from '../parser';
+import evaluate from '.';
 import {
   Environment,
   InternalObject,
@@ -6,16 +9,18 @@ import {
   InternalError,
   InternalString,
   InternalArray,
+  InternalHash,
 } from './internal-objects';
-import Lexer from '../lexer';
-import Parser from '../parser';
-import evaluate from '.';
-import { Maybe } from '../utils/maybe';
 import { INTERNAL_NULL } from './internal-objects/internal-null';
 import {
   INTERNAL_TRUE,
   INTERNAL_FALSE,
 } from './internal-objects/internal-boolean';
+
+import { Maybe } from '../utils/maybe';
+
+type Hashable = InternalBoolean | InternalString | InternalInteger;
+type HashableConstructors = new (...args: any[]) => Hashable;
 
 function getValue(obj: Maybe<InternalObject>): unknown | unknown[] {
   const stack = [obj];
@@ -50,6 +55,7 @@ function getValue(obj: Maybe<InternalObject>): unknown | unknown[] {
       results.unshift(next.message);
       continue;
     }
+    console.error(next);
     throw new Error(`I don't know how to get value for ${next}`);
   }
   return results.length > 1 ? results : results[0];
@@ -463,6 +469,76 @@ describe('when evaluating array expressions', () => {
         const evaluated = testEval(input);
         expect(getValue(evaluated)).toBe(expected);
       });
+    });
+  });
+});
+
+describe('when hashing keys for strings, booleans, integers', () => {
+  test.each([
+    ['ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ', InternalString],
+    [true, InternalBoolean],
+    [false, InternalBoolean],
+    [123, InternalInteger],
+  ])(
+    'it has the same hash key for equivalent values',
+    (input, type: HashableConstructors) => {
+      const value1 = new type(input);
+      const value2 = new type(input);
+      const hash1 = value1.toHashKey();
+      const hash2 = value2.toHashKey();
+
+      expect(hash1).toBe(hash2);
+    }
+  );
+});
+
+describe('when evaluating hash literal expressions', () => {
+  it('evaluates', () => {
+    const input = `
+    let two = "two";
+    {
+      "one": 10 - 9,
+      two: 1 + 1,
+      "thr" + "ee": 6 / 2,
+      4: 4,
+      true: 5,
+      false: 6,
+      "valueOf": fn(x) { "string" },
+      "valueOf": fn(x) { "string" },
+    };
+  `;
+    const expected =
+      '{ STRING@1a08aa1921ca5caf: 1, STRING@5714d319447c9709: 2, STRING@5a73f1720ca645a3: 3, INTEGER@4: 4, BOOLEAN@1: 5, BOOLEAN@0: 6, STRING@a3a7fde9b1aa14db: fn(x) { "string" } }';
+    const evaluated = testEval(input) as InternalHash;
+    expect(evaluated).toBeInstanceOf(InternalHash);
+    expect(evaluated.inspect()).toEqual(expected);
+  });
+
+  describe('when valid', () => {
+    test.each([
+      ['{"foo": 5 }["foo"]', 5],
+      ['{"foo": 5 }[if (true) { "foo" }]', 5],
+      ['{"foo": 5 }["bar"]', null],
+      ['let key = "foo"; {"foo": 5 }[key]', 5],
+      ['{}["foo"]', null],
+      ['{5: 5}[5]', 5],
+      ['{true: 5}[true]', 5],
+      ['{false: 5}[false]', 5],
+    ])('it evaluates %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
+    });
+  });
+
+  describe('when invalid', () => {
+    test.each([
+      [
+        '{ "foo": 5 }[fn(x) { x }]',
+        'TypeError: index expression must be an integer, string, or boolean',
+      ],
+    ])('it evaluates %p', (input, expected) => {
+      const evaluated = testEval(input);
+      expect(getValue(evaluated)).toBe(expected);
     });
   });
 });

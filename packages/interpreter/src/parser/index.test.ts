@@ -18,6 +18,7 @@ import {
   IndexExpression,
 } from '../ast/';
 import ArrayLiteral from '../ast/nodes/array-literal';
+import HashLiteral from '../ast/nodes/hash-literal';
 
 function testParse(input: string): [Parser, Program] {
   const lexer = new Lexer(input);
@@ -683,7 +684,7 @@ describe('when parsing array expressions', () => {
 });
 
 describe('when parsing string literal expressions', () => {
-  test.each([['"hello world"', 'hello world']])(
+  test.each([['"hello world"', '"hello world"']])(
     'it parses: %p',
     (input, string) => {
       const [parser, program] = testParse(input);
@@ -697,4 +698,24 @@ describe('when parsing string literal expressions', () => {
       expect(statement.expression).toBeInstanceOf(StringLiteral);
     }
   );
+});
+
+describe('when parsing hash literal expressions', () => {
+  test.each([
+    ['{}', '{}'],
+    ['{ "key": "value" };', '{ "key": "value" }'],
+    ['{ "key": true }', '{ "key": true }'],
+    ['{ "key": 1 + 1 }', '{ "key": (1 + 1) }'],
+    ['{ "key": fn(x) { x } }', '{ "key": fn(x) { x } }'],
+  ])('it parses: %p', (input, string) => {
+    const [parser, program] = testParse(input);
+    expect(program).not.toBeNull();
+    expect(parser.errors.length).toBe(0);
+    expect(program?.statements.length).toBe(1);
+    expect(program.toString()).toEqual(string);
+
+    const statement = program?.statements[0] as ExpressionStatement;
+    expect(statement).toBeInstanceOf(ExpressionStatement);
+    expect(statement.expression).toBeInstanceOf(HashLiteral);
+  });
 });

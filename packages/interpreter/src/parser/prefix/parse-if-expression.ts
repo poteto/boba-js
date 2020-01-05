@@ -1,6 +1,7 @@
 import Parser, { PrecedenceOrder } from '..';
 import { IfExpression, Expression } from '../../ast';
 import { TokenType } from '../../token';
+
 import assertTokenType from '../../utils/assert-token-type';
 
 export default function parseIfExpression(this: Parser): Expression | null {

@@ -9,5 +9,8 @@
   ],
   "author": "Lauren Tan <arr@sugarpirate.com> (http://www.sugarpirate.com)",
   "license": "MIT",
-  "devDependencies": {}
+  "devDependencies": {},
+  "dependencies": {
+    "fnv-plus": "^1.3.1"
+  }
 }

@@ -1,6 +1,7 @@
 import Parser from '..';
 import { ArrayLiteral, Expression } from '../../ast';
 import { TokenType } from '../../token';
+
 import assertTokenType from '../../utils/assert-token-type';
 import assertNonNullable from '../../utils/assert-non-nullable';
 

@@ -1,7 +1,8 @@
 import Parser from '..';
 import { CallExpression, Expression } from '../../ast';
-import assertTokenType from '../../utils/assert-token-type';
 import { TokenType } from '../../token';
+
+import assertTokenType from '../../utils/assert-token-type';
 
 export default function parseCallExpression(
   this: Parser,

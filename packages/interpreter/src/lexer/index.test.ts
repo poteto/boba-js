@@ -43,6 +43,8 @@ describe('Lexer', () => {
       "laurentan";
       "lauren tan";
       [1, 2];
+
+      { "name": "lauren tan" };
     `.trim();
     const expected = [
       { type: TokenType.LET, literal: 'let' },
@@ -127,6 +129,12 @@ describe('Lexer', () => {
       { type: TokenType.COMMA, literal: ',' },
       { type: TokenType.INT, literal: '2' },
       { type: TokenType.RBRACKET, literal: ']' },
+      { type: TokenType.SEMICOLON, literal: ';' },
+      { type: TokenType.LBRACE, literal: '{' },
+      { type: TokenType.STRING, literal: 'name' },
+      { type: TokenType.COLON, literal: ':' },
+      { type: TokenType.STRING, literal: 'lauren tan' },
+      { type: TokenType.RBRACE, literal: '}' },
       { type: TokenType.SEMICOLON, literal: ';' },
       { type: TokenType.EOF, literal: '' },
     ];

@@ -1,6 +1,6 @@
-import { InternalObject, InternalObjectType } from '.';
+import { HashableInternalObject, InternalObjectType } from '.';
 
-export default class InternalBoolean implements InternalObject {
+export default class InternalBoolean implements HashableInternalObject {
   constructor(public value: boolean) {}
 
   get type() {
@@ -9,6 +9,11 @@ export default class InternalBoolean implements InternalObject {
 
   inspect() {
     return this.value.toString();
+  }
+
+  toHashKey() {
+    const value = this.value ? 1 : 0 ;
+    return `${this.type}@${value}`;
   }
 }
 
