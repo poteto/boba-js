@@ -1,6 +1,7 @@
 import Parser, { PrecedenceOrder } from '..';
 import { IndexExpression, Expression } from '../../ast';
 import { TokenType } from '../../token';
+
 import assertTokenType from '../../utils/assert-token-type';
 import { Maybe } from '../../utils/maybe';
 

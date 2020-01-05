@@ -3,6 +3,7 @@ export { default as InternalArray } from './internal-array';
 export { default as InternalBoolean } from './internal-boolean';
 export { createError, default as InternalError } from './internal-error';
 export { default as InternalFunction } from './internal-function';
+export { default as InternalHash } from './internal-hash';
 export { default as InternalInteger } from './internal-integer';
 export { default as InternalNull } from './internal-null';
 export { default as InternalString } from './internal-string';

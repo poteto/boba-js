@@ -1,3 +1,6 @@
+import Lexer from '../lexer';
+import Parser from '../parser';
+import evaluate from '.';
 import {
   Environment,
   InternalObject,
@@ -6,17 +9,15 @@ import {
   InternalError,
   InternalString,
   InternalArray,
+  InternalHash,
 } from './internal-objects';
-import Lexer from '../lexer';
-import Parser from '../parser';
-import evaluate from '.';
-import { Maybe } from '../utils/maybe';
 import { INTERNAL_NULL } from './internal-objects/internal-null';
 import {
   INTERNAL_TRUE,
   INTERNAL_FALSE,
 } from './internal-objects/internal-boolean';
-import InternalHash from './internal-objects/internal-hash';
+
+import { Maybe } from '../utils/maybe';
 
 type Hashable = InternalBoolean | InternalString | InternalInteger;
 type HashableConstructors = new (...args: any[]) => Hashable;

@@ -1,8 +1,8 @@
 import Parser, { PrecedenceOrder } from '..';
-import { Expression } from '../../ast';
+import { Expression, HashLiteral } from '../../ast';
 import { TokenType } from '../../token';
+
 import assertTokenType from '../../utils/assert-token-type';
-import HashLiteral from '../../ast/nodes/hash-literal';
 import { Maybe } from '../../utils/maybe';
 
 export default function parseHashLiteral(this: Parser): Maybe<Expression> {

@@ -1,41 +1,42 @@
 import { TokenType } from '../token';
 import stdlib from './stdlib';
 import {
+  ArrayLiteral,
   ASTNode,
-  IntegerLiteral,
-  Program,
-  ExpressionStatement,
-  BooleanLiteral,
-  PrefixExpression,
-  InfixExpression,
-  IfExpression,
   BlockStatement,
-  ReturnStatement,
-  LetStatement,
-  Identifier,
+  BooleanLiteral,
   CallExpression,
   Expression,
+  ExpressionStatement,
   FunctionLiteral,
-  StringLiteral,
-  ArrayLiteral,
+  HashLiteral,
+  Identifier,
+  IfExpression,
   IndexExpression,
+  InfixExpression,
+  IntegerLiteral,
+  LetStatement,
+  PrefixExpression,
+  Program,
+  ReturnStatement,
+  StringLiteral,
 } from '../ast';
 import {
-  Environment,
-  InternalObject,
-  InternalInteger,
-  InternalBoolean,
-  InternalReturnValue,
-  InternalError,
-  InternalObjectType,
   createError,
-  InternalFunction,
-  InternalString,
-  InternalArray,
-  StandardLibraryObject,
+  Environment,
   HashableInternalObject,
+  InternalArray,
+  InternalBoolean,
+  InternalError,
+  InternalFunction,
+  InternalHash,
+  InternalInteger,
+  InternalObject,
+  InternalObjectType,
+  InternalReturnValue,
+  InternalString,
+  StandardLibraryObject,
 } from './internal-objects';
-import { Maybe } from '../utils/maybe';
 import {
   ArgumentError,
   isArgumentError,
@@ -48,9 +49,8 @@ import {
 
 import assertNonNullable from '../utils/assert-non-nullable';
 import hasOwnProperty from '../utils/has-own-property';
-import HashLiteral from '../ast/nodes/hash-literal';
+import { Maybe } from '../utils/maybe';
 import isHashableInternalObject from '../utils/is-hashable-internal-object';
-import InternalHash from './internal-objects/internal-hash';
 
 const MIN_ARRAY_INDEX = 0;
 

@@ -1,6 +1,7 @@
 import Parser from '..';
 import { Expression, IntegerLiteral } from '../../ast';
 import { TokenType } from '../../token';
+
 import assertTokenType from '../../utils/assert-token-type';
 
 export default function parseIntegerLiteral(this: Parser): Expression {
