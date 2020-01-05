@@ -12,7 +12,7 @@ export default class InternalBoolean implements HashableInternalObject {
   }
 
   toHashKey() {
-    const value = this.value ? 1 : 0 ;
+    const value = this.value ? 1 : 0;
     return `${this.type}@${value}`;
   }
 }

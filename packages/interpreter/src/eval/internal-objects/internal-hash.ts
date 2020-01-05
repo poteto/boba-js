@@ -1,7 +1,7 @@
 import { InternalObject, InternalObjectType, HashKey } from '.';
 
 type HashPairMap = {
-  [key in HashKey]: InternalObject
+  [key in HashKey]: InternalObject;
 };
 
 export default class InternalHash implements InternalObject {

@@ -20,4 +20,4 @@ jobs:
   include:
     - stage: Test
       install: yarn install --frozen-lockfile
-      script: yarn test
+      script: yarn lint && yarn test
