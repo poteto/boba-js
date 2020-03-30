@@ -13,7 +13,7 @@ export default class InternalFunction implements InternalObject {
   }
 
   inspect() {
-    const parameters = this.parameters?.map(p => p.toString()).join(', ');
+    const parameters = this.parameters?.map((p) => p.toString()).join(', ');
     let block = this.body?.toString();
     if (block?.length) {
       block = `{ ${this.body?.toString()} }`;

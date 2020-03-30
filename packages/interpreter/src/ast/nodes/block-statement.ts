@@ -10,6 +10,6 @@ export default class BlockStatement implements Statement {
     return this.token.literal;
   }
   toString() {
-    return this.statements.map(statement => statement.toString()).join('\n');
+    return this.statements.map((statement) => statement.toString()).join('\n');
   }
 }
