@@ -14,7 +14,7 @@ export default class CallExpression implements Expression {
   }
   toString() {
     return `${this.fn?.toString()}(${this.args
-      ?.map(arg => arg.toString())
+      ?.map((arg) => arg.toString())
       .join(', ')})`;
   }
 }

@@ -10,7 +10,7 @@ export default class ArrayLiteral implements Expression {
   }
   toString() {
     const elements = this.elements
-      .map(element => element.toString())
+      .map((element) => element.toString())
       .join(', ');
     return `[${elements}]`;
   }

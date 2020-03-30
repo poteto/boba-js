@@ -16,7 +16,7 @@ describe('Lexer', () => {
       { type: TokenType.EOF, literal: '' },
     ];
     const lexer = new Lexer(input);
-    expected.forEach(test => expect(lexer.nextToken()).toEqual(test));
+    expected.forEach((test) => expect(lexer.nextToken()).toEqual(test));
   });
 
   it('lexes additional operators and keywords', () => {
@@ -139,6 +139,6 @@ describe('Lexer', () => {
       { type: TokenType.EOF, literal: '' },
     ];
     const lexer = new Lexer(input);
-    expected.forEach(test => expect(lexer.nextToken()).toEqual(test));
+    expected.forEach((test) => expect(lexer.nextToken()).toEqual(test));
   });
 });

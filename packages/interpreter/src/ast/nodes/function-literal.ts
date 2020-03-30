@@ -11,7 +11,7 @@ export default class FunctionLiteral implements Expression {
     return this.token.literal;
   }
   toString() {
-    const parameters = this.parameters?.map(p => p.toString()).join(', ');
+    const parameters = this.parameters?.map((p) => p.toString()).join(', ');
     let block = this.body?.toString();
     if (block?.length) {
       block = `{ ${this.body?.toString()} }`;

@@ -11,6 +11,6 @@ export default class Program implements ASTNode {
   }
 
   toString() {
-    return this.statements.map(statement => statement.toString()).join('\n');
+    return this.statements.map((statement) => statement.toString()).join('\n');
   }
 }
