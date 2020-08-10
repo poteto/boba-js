@@ -15,7 +15,7 @@
   },
   "author": "Lauren Tan <arr@sugarpirate.com> (http://www.sugarpirate.com)",
   "devDependencies": {
-    "@types/jest": "26.0.7",
+    "@types/jest": "26.0.9",
     "@types/node": "12.12.53",
     "@typescript-eslint/eslint-plugin": "3.9.0",
     "@typescript-eslint/parser": "3.9.0",
